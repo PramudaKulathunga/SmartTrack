@@ -4,10 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // For checking first launch
 
-import WalkthroughScreen from './screens/walkthroughScreen';
-import HomeScreen from './screens/HomeScreen';
-import MapScreen from './screens/MapScreen';
-import AboutUsScreen from './screens/AboutScreen';
+import WalkthroughScreen from './src/screens/WalkthroughScreen/WalkthroughScreen';
+import HomeScreen from './src/screens/HomeScreen';
+import MapScreen from './src/screens/MapScreen';
+import AboutUsScreen from './src/screens/AboutScreen';
 
 const Stack = createStackNavigator();
 
@@ -34,7 +34,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName={isFirstLaunch ? 'Walkthrough' : 'Home'}>
-        <Stack.Screen name="Walkthrough" component={WalkthroughScreen} />
+        <Stack.Screen name="Walkthrough" component={WalkthroughScreen} options={{ headerShown: false }}/>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Map" component={MapScreen} />
         <Stack.Screen name="About Us" component={AboutUsScreen} />
