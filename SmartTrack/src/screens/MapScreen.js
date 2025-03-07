@@ -5,10 +5,7 @@ import MapView from 'react-native-maps';
 export default function MapScreen({ navigation }) {
     return (
         <View style={styles.container}>
-            <Text>Map Screen</Text>
             <MapView style={styles.map} />
-            <Button title="Go to Home" onPress={() => navigation.navigate('Home')} />
-            <Button title="Go to About Us" onPress={() => navigation.navigate('About Us')} />
         </View>
     );
 }
