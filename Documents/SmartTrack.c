@@ -1,173 +1,200 @@
-#include <HardwareSerial.h>  // Library for serial communication
-#include <TinyGPS++.h>      // Library for parsing GPS data
-#include <DHT.h>            // Library for DHT11 sensor
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include "driver/gpio.h"
+#include "driver/uart.h"
+#include "esp_log.h"
+#include "esp_system.h"
+#include "esp_err.h"
+#include "esp_timer.h"
+#include "driver/adc.h"
+#include "esp_intr_alloc.h"
+#include "esp32/rom/uart.h"
+#include "esp_log.h"
+#include "DHT.h"
 
-// Pin Definitions
-#define A9G_RX_PIN 16  // ESP32 GPIO connected to A9G TX
-#define A9G_TX_PIN 17  // ESP32 GPIO connected to A9G RX
-#define GPS_RX_PIN 18  // ESP32 GPIO connected to GPS TX
-#define GPS_TX_PIN 19  // ESP32 GPIO connected to GPS RX
-#define BUTTON_PIN 21  // GPIO for the push button
-#define BUZZER_PIN 22  // GPIO for the buzzer
-#define DHT_PIN 4      // GPIO for DHT11 sensor
-#define DHT_TYPE DHT11 // Type of DHT sensor (DHT11)
+// Define the pins
+#define A9G_RX_PIN 16    // ESP32 GPIO to A9G TX
+#define A9G_TX_PIN 17    // ESP32 GPIO to A9G RX
+#define GPS_RX_PIN 18    // ESP32 GPIO to GPS TX
+#define GPS_TX_PIN 19    // ESP32 GPIO to GPS RX
+#define BUTTON_PIN 21    // GPIO for the push button
+#define BUZZER_PIN 22    // GPIO for the buzzer
+#define DHT_PIN 4        // GPIO for DHT11 sensor
+#define DHT_TYPE DHT11
 
-// Serial objects for GSM and GPS modules
-HardwareSerial A9GSerial(1);  // UART1 for GSM (A9G module)
-HardwareSerial GPSSerial(2);  // UART2 for GPS module
+// Hardware Serial Ports
+#define UART_NUM_1      1
+#define UART_NUM_2      2
 
-// Objects for GPS and DHT11
-TinyGPSPlus gps;  // Object to parse GPS data
-DHT dht(DHT_PIN, DHT_TYPE);  // Object to read DHT11 sensor data
+// Initialize UART settings
+#define BAUD_RATE       115200
+#define GPS_BAUD_RATE   9600
 
-// Global Variables
-String phoneNumber = "+94771620857";  // Phone number for SMS and calls
-bool buzzerActive = false;   // Tracks if buzzer is active (Emergency Mode)
-bool smsAlertActive = false; // Tracks if buzzer is active (SMS Alert)
+// DHT
+DHT dht(DHT_PIN, DHT_TYPE);
 
-// Function Prototypes
-void initGSM();  // Initialize GSM module
-void checkForIncomingSMS();  // Check for incoming SMS
-void sendSMS(String number, String message);  // Send SMS
-void makeCall(String number);  // Make a call
-void sendCommand(String command, String expectedResponse, int timeout);  // Send AT command to GSM
-String getGPSData();  // Get GPS data (latitude, longitude, speed)
-String getDHTData();  // Get DHT11 data (temperature, humidity)
+// Global variables for GSM and GPS
+char phoneNumber[] = "+94771620857";
+bool buzzerActive = false;
+bool smsAlertActive = false;
 
-// Setup Function
-void setup() {
-  Serial.begin(115200);  // Start serial communication for debugging
-  pinMode(BUTTON_PIN, INPUT_PULLUP);  // Set button pin as input with pull-up resistor
-  pinMode(BUZZER_PIN, OUTPUT);  // Set buzzer pin as output
-  dht.begin();  // Initialize DHT11 sensor
+void initGSM();
+void sendCommand(char* command, char* expectedResponse, int timeout);
+void makeCall(char* number);
+void sendSMS(char* number, char* message);
+char* getGPSData();
+char* getDHTData();
+void checkForIncomingSMS();
 
-  // Initialize GPS module
-  GPSSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-  initGSM();  // Initialize GSM module
-}
-
-// Main Loop
-void loop() {
-  checkForIncomingSMS();  // Check for incoming SMS
-
-  // Handle button press
-  if (digitalRead(BUTTON_PIN) == LOW) {  // If button is pressed
-    delay(200);  // Debounce delay to avoid multiple triggers
-    buzzerActive = !buzzerActive;  // Toggle buzzer state
-
-    if (buzzerActive) {  // If buzzer is activated
-      Serial.println("Button Pressed! Making a call and sending SMS...");
-      makeCall(phoneNumber);  // Make a call to the specified number
-      delay(10000);  // Wait for 10 seconds before sending SMS
-      String gpsMessage = getGPSData();  // Get GPS data
-      String dhtMessage = getDHTData();  // Get DHT11 data
-      Serial.println("GPS Data: " + gpsMessage);  // Print GPS data to serial monitor
-      Serial.println("DHT11 Data: " + dhtMessage);  // Print DHT11 data to serial monitor
-      sendSMS(phoneNumber, "Emergency! Please respond.\n" + gpsMessage + "\n" + dhtMessage);  // Send SMS with GPS and DHT11 data
-    } else {  // If buzzer is deactivated
-      Serial.println("Button Pressed Again! Stopping buzzer...");
-      digitalWrite(BUZZER_PIN, LOW);  // Turn off the buzzer
-    }
-
-    delay(500);  // Prevent multiple triggers
-  }
-
-  // Blink buzzer if active (Emergency mode OR SMS Alert)
-  if (buzzerActive || smsAlertActive) {
-    digitalWrite(BUZZER_PIN, HIGH);  // Turn on buzzer
-    delay(500);  // Wait for 500ms
-    digitalWrite(BUZZER_PIN, LOW);  // Turn off buzzer
-    delay(500);  // Wait for 500ms
-  }
-}
-
-// Initialize GSM Module
-void initGSM() {
-  Serial.println("Initializing A9G...");
-  A9GSerial.begin(115200, SERIAL_8N1, A9G_RX_PIN, A9G_TX_PIN);  // Start serial communication with GSM module
-  delay(3000);  // Wait for GSM module to initialize
-  sendCommand("AT+CMGF=1", "OK", 3000);  // Set SMS text mode
-  sendCommand("AT+CNMI=1,2,0,0,0", "OK", 3000);  // Enable SMS notifications
-}
-
-// Send AT Command to GSM Module
-void sendCommand(String command, String expectedResponse, int timeout) {
-  A9GSerial.println(command);  // Send command to GSM module
-  long int time = millis();  // Record current time
-  while ((millis() - time) < timeout) {  // Wait for response within timeout period
-    if (A9GSerial.available()) {  // If data is available from GSM module
-      String response = A9GSerial.readString();  // Read the response
-      Serial.println(response);  // Print response to serial monitor
-      if (response.indexOf(expectedResponse) != -1) {  // Check if expected response is received
-        break;  // Exit loop if expected response is found
-      }
-    }
-  }
-}
-
-// Make a Call
-void makeCall(String number) {
-  sendCommand("ATD" + number + ";", "OK", 5000);  // Send AT command to dial the number
-  Serial.println("Calling " + number);  // Print calling status to serial monitor
-}
-
-// Send SMS
-void sendSMS(String number, String message) {
-  sendCommand("AT+CMGF=1", "OK", 1000);  // Set SMS text mode
-  A9GSerial.print("AT+CMGS=\"");  // Start SMS command
-  A9GSerial.print(number);  // Add recipient number
-  A9GSerial.println("\"");  // End recipient number
-  delay(2000);  // Wait for GSM module to respond
-  A9GSerial.print(message);  // Send SMS message
-  delay(2000);  // Wait for GSM module to process
-  A9GSerial.write(26);  // Send CTRL+Z to indicate end of message
-  delay(5000);  // Wait for SMS to be sent
-  Serial.println("SMS Sent!");  // Print SMS sent status to serial monitor
-}
-
-// Get GPS Data
-String getGPSData() {
-  unsigned long startTime = millis();  // Record start time
-  while (millis() - startTime < 5000) {  // Wait up to 5 seconds for GPS fix
-    while (GPSSerial.available()) {  // If GPS data is available
-      gps.encode(GPSSerial.read());  // Parse GPS data
-    }
-
-    if (gps.location.isValid()) {  // If GPS data is valid
-      return "GPS Data:\nLat: " + String(gps.location.lat(), 6) + "\nLon: " + String(gps.location.lng(), 6) + "\nSpeed: " + String(gps.speed.kmph()) + " km/h";  // Return formatted GPS data
-    }
-  }
-  return "GPS Signal not available!";  // Return error message if GPS data is not available
-}
-
-// Get DHT11 Data
-String getDHTData() {
-  float temperature = dht.readTemperature();  // Read temperature from DHT11
-  float humidity = dht.readHumidity();  // Read humidity from DHT11
-
-  if (isnan(temperature) || isnan(humidity)) {  // If sensor reading fails
-    return "DHT11 Sensor Error!";  // Return error message
-  }
-
-  return "Temperature: " + String(temperature) + " C\nHumidity: " + String(humidity) + " %";  // Return formatted DHT11 data
-}
-
-// Check for Incoming SMS
-void checkForIncomingSMS() {
-  while (A9GSerial.available()) {  // If data is available from GSM module
-    String incomingData = A9GSerial.readString();  // Read incoming data
-    incomingData.trim();  // Remove extra spaces
-    Serial.print("Received: ");  // Print received data to serial monitor
-    Serial.println(incomingData);
+// Set up the UART communication for GSM and GPS
+void init_uart() {
+    uart_config_t uart_config = {
+        .baud_rate = BAUD_RATE,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+    uart_param_config(UART_NUM_1, &uart_config);
+    uart_set_pin(UART_NUM_1, A9G_TX_PIN, A9G_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_driver_install(UART_NUM_1, 1024, 0, 0, NULL, 0);
     
-    if (incomingData.indexOf("STOP") != -1) {  // If "STOP" command is received
-      Serial.println("STOP Message Received! Stopping Buzzer...");
-      smsAlertActive = false;  // Deactivate SMS alert
-      digitalWrite(BUZZER_PIN, LOW);  // Turn off buzzer
-    } 
-    if (incomingData.indexOf("BEEP") != -1) {  // If "BEEP" command is received
-      Serial.println("BEEP Message Received! Activating Buzzer Alert...");
-      smsAlertActive = true;  // Activate SMS alert
+    uart_config_t gps_uart_config = {
+        .baud_rate = GPS_BAUD_RATE,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+    uart_param_config(UART_NUM_2, &gps_uart_config);
+    uart_set_pin(UART_NUM_2, GPS_TX_PIN, GPS_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_driver_install(UART_NUM_2, 1024, 0, 0, NULL, 0);
+}
+
+// Send AT commands to GSM module
+void sendCommand(char* command, char* expectedResponse, int timeout) {
+    uart_write_bytes(UART_NUM_1, command, strlen(command));
+    vTaskDelay(timeout / portTICK_PERIOD_MS);
+    uint8_t data[128];
+    int len = uart_read_bytes(UART_NUM_1, data, sizeof(data), timeout / portTICK_PERIOD_MS);
+    if (len > 0) {
+        data[len] = '\0'; // Null terminate the string
+        ESP_LOGI("UART", "Response: %s", data);
     }
-  }
+}
+
+// Make a phone call
+void makeCall(char* number) {
+    char command[100];
+    snprintf(command, sizeof(command), "ATD%s;", number);
+    sendCommand(command, "OK", 5000);
+    ESP_LOGI("GSM", "Calling %s", number);
+}
+
+// Send SMS to a number
+void sendSMS(char* number, char* message) {
+    sendCommand("AT+CMGF=1", "OK", 1000);
+    char command[200];
+    snprintf(command, sizeof(command), "AT+CMGS=\"%s\"", number);
+    uart_write_bytes(UART_NUM_1, command, strlen(command));
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    uart_write_bytes(UART_NUM_1, message, strlen(message));
+    uart_write_bytes(UART_NUM_1, "\x1A", 1); // Send CTRL+Z to send SMS
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    ESP_LOGI("SMS", "SMS Sent!");
+}
+
+// Get GPS data
+char* getGPSData() {
+    static char gpsData[300];
+    int len = uart_read_bytes(UART_NUM_2, gpsData, sizeof(gpsData), 5000 / portTICK_PERIOD_MS);
+    if (len > 0) {
+        gpsData[len] = '\0'; // Null terminate the string
+        ESP_LOGI("GPS", "GPS Data: %s", gpsData);
+        return gpsData;
+    }
+    return "GPS Signal not available!";
+}
+
+// Get DHT data
+char* getDHTData() {
+    static char dhtData[100];
+    float temperature = dht.readTemperature();
+    float humidity = dht.readHumidity();
+    
+    if (isnan(temperature) || isnan(humidity)) {
+        snprintf(dhtData, sizeof(dhtData), "DHT11 Sensor Error!");
+    } else {
+        snprintf(dhtData, sizeof(dhtData), "Temperature: %.2f C, Humidity: %.2f%%", temperature, humidity);
+    }
+    
+    ESP_LOGI("DHT", "DHT Data: %s", dhtData);
+    return dhtData;
+}
+
+// Check for incoming SMS and process commands
+void checkForIncomingSMS() {
+    uint8_t data[128];
+    int len = uart_read_bytes(UART_NUM_1, data, sizeof(data), 1000 / portTICK_PERIOD_MS);
+    if (len > 0) {
+        data[len] = '\0'; // Null terminate the string
+        ESP_LOGI("SMS", "Received: %s", data);
+        
+        if (strstr((char*)data, "STOP") != NULL) {
+            ESP_LOGI("SMS", "STOP Message Received! Stopping Buzzer...");
+            smsAlertActive = false;
+            gpio_set_level(BUZZER_PIN, 0);
+        }
+        
+        if (strstr((char*)data, "BEEP") != NULL) {
+            ESP_LOGI("SMS", "BEEP Message Received! Activating Buzzer Alert...");
+            smsAlertActive = true;
+        }
+    }
+}
+
+void app_main(void) {
+    // Initialize GPIO for button and buzzer
+    gpio_set_direction(BUTTON_PIN, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(BUTTON_PIN, GPIO_PULLUP_ONLY);
+    gpio_set_direction(BUZZER_PIN, GPIO_MODE_OUTPUT);
+
+    // Initialize the UART and DHT sensor
+    init_uart();
+    dht.begin();
+
+    while (1) {
+        // Check if the button is pressed
+        if (gpio_get_level(BUTTON_PIN) == 0) {
+            vTaskDelay(200 / portTICK_PERIOD_MS); // Debounce
+            buzzerActive = !buzzerActive;
+
+            if (buzzerActive) {
+                ESP_LOGI("Button", "Button Pressed! Making a call and sending SMS...");
+                makeCall(phoneNumber);
+                vTaskDelay(10000 / portTICK_PERIOD_MS); // Wait before sending SMS
+                char* gpsMessage = getGPSData();
+                char* dhtMessage = getDHTData();
+                sendSMS(phoneNumber, gpsMessage);
+                sendSMS(phoneNumber, dhtMessage);
+            } else {
+                ESP_LOGI("Button", "Button Pressed Again! Stopping buzzer...");
+                gpio_set_level(BUZZER_PIN, 0); // Stop buzzer
+            }
+
+            vTaskDelay(500 / portTICK_PERIOD_MS); // Prevent multiple triggers
+        }
+
+        // Blink buzzer if active (Emergency mode OR SMS Alert)
+        if (buzzerActive || smsAlertActive) {
+            gpio_set_level(BUZZER_PIN, 1);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+            gpio_set_level(BUZZER_PIN, 0);
+            vTaskDelay(500 / portTICK_PERIOD_MS);
+        }
+
+        // Check for incoming SMS
+        checkForIncomingSMS();
+    }
 }
