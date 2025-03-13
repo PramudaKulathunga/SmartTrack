@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { database, get, ref, set } from '../../firebaseConfig';
+import CustomAlert from '../../Component/CustomAlert';
 
 const SignUpScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -10,10 +12,26 @@ const SignUpScreen = ({ navigation }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [role, setRole] = useState('owner');
+    const [isAlertVisible, setIsAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({});
+
+    // Function to show custom alert
+    const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
+        setAlertConfig({
+            title,
+            message,
+            showConfirmButton,
+            onConfirm,
+        });
+        setIsAlertVisible(true);
+    };
 
     const handleSignUp = async () => {
+        Keyboard.dismiss();
+
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match.');
+            showAlert("Error", "Passwords do not match");
             return;
         }
         setLoading(true);
@@ -23,22 +41,31 @@ const SignUpScreen = ({ navigation }) => {
             const snapshot = await get(userRef);
 
             if (snapshot.exists()) {
-                Alert.alert('Error', 'Account already exists. Please login.');
-                navigation.navigate('Login');
+                showAlert(
+                    "Account Exists",
+                    "Please login! Are you like to terminate process?",
+                    true,
+                    async () => {
+                        navigation.jumpTo("Login");
+                    }
+                );
                 return;
             }
 
             await set(userRef, {
                 email: email,
                 password: password,
+                role: role,
+                name: "Fill your name",
+                phoneNumber: "Add your phone number",
                 createdAt: new Date().toISOString(),
             });
 
-            Alert.alert('Success', 'Account created successfully!');
+            showAlert("Success", "Account created successfully!");
             navigation.navigate('Login');
         } catch (error) {
             console.error('Firebase Error:', error);
-            Alert.alert('Error', error.message);
+            showAlert("Error", error.message);
         } finally {
             setLoading(false);
         }
@@ -54,6 +81,16 @@ const SignUpScreen = ({ navigation }) => {
                     <Text style={styles.title}>CREATE YOUR ACCOUNT</Text>
                 </View>
                 <View style={styles.buttonContainer}>
+                    <View style={styles.pickerContainer}>
+                        <Picker
+                            selectedValue={role}
+                            onValueChange={(itemValue) => setRole(itemValue)}
+                            style={styles.picker}
+                        >
+                            <Picker.Item label="Owner" value="owner" />
+                            <Picker.Item label="Driver" value="driver" />
+                        </Picker>
+                    </View>
                     <TextInput
                         style={styles.input}
                         placeholder="Email"
@@ -116,6 +153,16 @@ const SignUpScreen = ({ navigation }) => {
                     </Text>
                 </View>
             </View>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                visible={isAlertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                onClose={() => setIsAlertVisible(false)}
+                onConfirm={alertConfig.onConfirm}
+                showConfirmButton={alertConfig.showConfirmButton}
+            />
         </ImageBackground >
     );
 };
@@ -146,6 +193,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         width: '75%'
+    },
+    pickerContainer: {
+        width: '100%',
+        marginBottom: 10,
+        borderRadius: 25,
+        borderWidth: 1,
+        borderColor: 'rgb(15, 164, 220)',
+        overflow: 'hidden',
+    },
+    picker: {
+        width: '100%',
+        color: 'rgb(15, 164, 220)',
     },
     input: {
         width: '100%',

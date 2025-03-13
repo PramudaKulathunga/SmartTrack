@@ -4,7 +4,7 @@ import { View, Text, Image, StyleSheet, ScrollView, ImageBackground } from "reac
 export default function AboutUsScreen() {
     return (
         <ImageBackground
-            source={require('../../assets/Background.png')}
+            source={require('../../assets/BackgroundAbout.png')}
             style={styles.background}
         >
             <ScrollView
@@ -16,7 +16,7 @@ export default function AboutUsScreen() {
                 <Image source={require("../../assets/logo_transparent.png")} style={styles.logo} />
                 <Text style={{ textAlign: 'center', marginTop: -35 }}>Version 1.0.0</Text>
 
-                <Text style={styles.title}>Team Members</Text>
+                <Text style={[styles.title,{marginBottom:50}]}>Team Members</Text>
 
                 {/* Instructors Section */}
                 <Text style={styles.sectionTitle}>Department of Computer Engineering</Text>
@@ -102,6 +102,8 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#666",
         marginVertical: 10,
-        textAlign: "justify"
+        textAlign: "justify",
+        paddingLeft: 10,
+        paddingRight: 10
     },
 });

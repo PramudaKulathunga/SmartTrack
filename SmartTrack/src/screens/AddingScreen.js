@@ -1,35 +1,156 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { database, ref, set, get } from "../firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomAlert from '../Component/CustomAlert';
 
 export default function AddingScreen({ navigation }) {
     const [newDeviceName, setNewDeviceName] = useState("");
     const [newDeviceId, setNewDeviceId] = useState("");
+    const [userData, setUserData] = useState(null);
+    const [isAlertVisible, setIsAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({});
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    // Function to show custom alert
+    const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
+        setAlertConfig({
+            title,
+            message,
+            showConfirmButton,
+            onConfirm,
+        });
+        setIsAlertVisible(true);
+    };
+
+    // Fetch user data and devices when the screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            const fetchUserData = async () => {
+                const storedUserData = await AsyncStorage.getItem("userData");
+                if (storedUserData) {
+                    const parsedUserData = JSON.parse(storedUserData);
+                    setUserData(parsedUserData);
+                    fetchDevices(parsedUserData.email);
+                }
+            };
+            fetchUserData();
+        }, [])
+    );
+
+    // Fetch devices from Firebase
+    const fetchDevices = async (email) => {
+        const devicesRef = ref(database, `users/${email.replace(/\./g, ",")}/devices`);
+        const snapshot = await get(devicesRef);
+        if (snapshot.exists()) {
+            const devices = Object.values(snapshot.val());
+            setUserData((prevUserData) => ({ ...prevUserData, devices }));
+        }
+    };
+
+    // Add keyboard event listeners
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
+            setKeyboardVisible(true); // Keyboard is visible
+        });
+        const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+            setKeyboardVisible(false); // Keyboard is hidden
+        });
+
+        // Clean up listeners
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
+
+    // Function to handle adding a new device
+    const handleAddDevice = async () => {
+        Keyboard.dismiss();
+
+        if (newDeviceName.trim() === "" || newDeviceId.trim() === "") {
+            showAlert("Error", "Please fill in all fields.");
+            return;
+        }
+
+        if (userData.role === "driver" && userData.devices?.length >= 1) {
+            showAlert(
+                "Device Count Exceeded",
+                "Drivers can only add one device. Do you want to terminate this process?",
+                true,
+                async () => {
+                    navigation.jumpTo("Home");
+                }
+            );
+            return;
+        }
+
+        try {
+            const newDevice = {
+                id: (userData.devices?.length || 0) + 1,
+                name: newDeviceName,
+                deviceId: newDeviceId,
+            };
+
+            const updatedDevices = userData.devices ? [...userData.devices, newDevice] : [newDevice];
+
+            // Update Firebase
+            const userRef = ref(database, `users/${userData.email.replace(/\./g, ",")}`);
+            await set(ref(database, `users/${userData.email.replace(/\./g, ",")}/devices`), updatedDevices);
+
+            // Update AsyncStorage
+            const updatedUserData = { ...userData, devices: updatedDevices };
+            await AsyncStorage.setItem("userData", JSON.stringify(updatedUserData));
+
+            setNewDeviceId('');
+            setNewDeviceName('');
+            navigation.jumpTo("Home");
+        } catch (error) {
+            showAlert("Error", "An error occurred while adding the device. Please try again.");
+        }
+    };
 
     return (
         <ImageBackground
             source={require('../../assets/Background.png')}
             style={styles.background}
         >
-            <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Add New Device</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Device Name"
-                    value={newDeviceName}
-                    onChangeText={setNewDeviceName}
-                />
-                <TextInput
-                    style={styles.input}
-                    placeholder="Device ID"
-                    value={newDeviceId}
-                    onChangeText={setNewDeviceId}
-                />
-                <View style={styles.modalButtons}>
-                    <TouchableOpacity style={styles.submitButton} onPress={() => navigation.jumpTo('Home')}>
-                        <Text style={styles.buttonText}>Add</Text>
-                    </TouchableOpacity>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.container}
+            >
+                <View style={styles.modalContent}>
+                    <Text style={[styles.modalTitle, { marginBottom: isKeyboardVisible ? 120 : 230 }, { marginTop: isKeyboardVisible ? 50 : 100 },]}>Add New Device</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Device Name"
+                        value={newDeviceName}
+                        onChangeText={setNewDeviceName}
+                    />
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Device ID"
+                        value={newDeviceId}
+                        onChangeText={setNewDeviceId}
+                    />
+                    <View style={styles.modalButtons}>
+                        <TouchableOpacity style={styles.submitButton} onPress={handleAddDevice}>
+                            <Text style={styles.buttonText}>Add</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+
+                {/* Custom Alert */}
+                <CustomAlert
+                    visible={isAlertVisible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    onClose={() => setIsAlertVisible(false)}
+                    onConfirm={alertConfig.onConfirm}
+                    showConfirmButton={alertConfig.showConfirmButton}
+                />
+            </KeyboardAvoidingView>
         </ImageBackground>
     );
 }
@@ -39,6 +160,13 @@ const styles = StyleSheet.create({
         flex: 1,
         resizeMode: 'cover',
     },
+    container: {
+        flex: 1,
+    },
+    scrollContainer: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+    },
     modalContainer: {
         flex: 1,
         justifyContent: "center",
@@ -47,7 +175,6 @@ const styles = StyleSheet.create({
         padding: 20
     },
     modalContent: {
-        marginTop: 100,
         width: "100%",
         padding: 20,
         borderRadius: 10,
@@ -57,7 +184,6 @@ const styles = StyleSheet.create({
         fontSize: 30,
         color: '#fff',
         fontWeight: 'bold',
-        marginBottom: 260,
     },
     input: {
         width: "100%",

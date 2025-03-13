@@ -24,7 +24,6 @@ const Tab = createBottomTabNavigator();
 
 // Bottom Tab Navigator
 function BottomTabs() {
-  const [modalVisible, setModalVisible] = useState(false);
 
   return (
     <Tab.Navigator
@@ -55,7 +54,7 @@ function BottomTabs() {
     >
       <Tab.Screen name="Add" component={AddingScreen} options={{ tabBarLabel: "", headerShown: false }} />
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Map" component={MapScreen}/>
+      <Tab.Screen name="Map" component={MapScreen} options={{ headerShown: false }}  />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
       <Tab.Screen name="About Us" component={AboutUsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
@@ -65,9 +64,11 @@ function BottomTabs() {
 // Main App
 export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const checkFirstLaunch = async () => {
+    const checkFirstLaunchAndLogin = async () => {
+      // Check if it's the first launch
       const isFirst = await AsyncStorage.getItem('isFirstLaunch');
       if (isFirst === null) {
         setIsFirstLaunch(true);
@@ -75,8 +76,29 @@ export default function App() {
       } else {
         setIsFirstLaunch(false);
       }
+
+      // Check for stored user data
+      const storedUserData = await AsyncStorage.getItem('userData');
+      if (storedUserData) {
+        const { loginDate } = JSON.parse(storedUserData);
+        const currentDate = new Date();
+        const storedDate = new Date(loginDate);
+        const timeDifference = currentDate - storedDate;
+        // console.log("currentDate: ",currentDate);
+        // console.log("storedDate: ",storedDate);
+        // console.log("timeDifference: ",timeDifference);
+
+
+        if (timeDifference  < 24 * 60 * 60 * 1000) {
+          setIsLoggedIn(true);
+        } else {
+          await AsyncStorage.removeItem('userData');
+          setIsLoggedIn(false);
+        }
+      }
     };
-    checkFirstLaunch();
+
+    checkFirstLaunchAndLogin();
   }, []);
 
   if (isFirstLaunch === null) {
@@ -85,12 +107,25 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName={isFirstLaunch ? 'Walkthrough' : 'Start'}>
-        <Stack.Screen name="Walkthrough" component={WalkthroughScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
+      <Stack.Navigator initialRouteName={isLoggedIn ? "Main" : "Start"}>
+        {isFirstLaunch && (
+          <Stack.Screen name="Walkthrough" component={WalkthroughScreen} options={{ headerShown: false }} />
+        )}
+        {!isLoggedIn ? (
+          <>
+            <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -107,9 +142,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     height: 70,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 0.5,
+    shadowRadius: 25,
+    elevation: 15,
+    zIndex: 100,
   },
   addButton: {
     backgroundColor: "rgb(15, 164, 220)",
@@ -118,14 +155,10 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#ff6a9e",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 10,
+    shadowRadius: 5,
     elevation: 5,
-  },
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

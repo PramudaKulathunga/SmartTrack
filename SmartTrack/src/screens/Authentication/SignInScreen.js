@@ -1,22 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { database, get, ref } from '../../firebaseConfig';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomAlert from '../../Component/CustomAlert';
 
 const SignInScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isAlertVisible, setIsAlertVisible] = useState(false);
+    const [alertConfig, setAlertConfig] = useState({});
+
+    // Function to show custom alert
+    const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
+        setAlertConfig({
+            title,
+            message,
+            showConfirmButton,
+            onConfirm,
+        });
+        setIsAlertVisible(true);
+    };
 
     const handleLogin = async () => {
+        Keyboard.dismiss();
+
         setLoading(true);
         try {
             const userRef = ref(database, `users/${email.replace(/\./g, ',')}`);
             const snapshot = await get(userRef);
 
             if (!snapshot.exists()) {
-                Alert.alert('Error', 'Account not found using this email. Please Sign up');
+                showAlert("Error", "Account not found using this email. Please Sign up");
                 navigation.navigate('SignUp');
                 return;
             }
@@ -24,13 +41,25 @@ const SignInScreen = ({ navigation }) => {
             const userData = snapshot.val();
 
             if (userData.password === password) {
+                const loginDate = new Date().toISOString();
+                const userDataToStore = {
+                    email: email,
+                    password: password,
+                    name: userData.name,
+                    phoneNumber: userData.phoneNumber,
+                    role: userData.role,
+                    loginDate: loginDate,
+                    devices: userData.devices || [],
+                };
+                await AsyncStorage.setItem('userData', JSON.stringify(userDataToStore));
+
                 navigation.replace('Main');
             } else {
-                Alert.alert('Error', 'Incorrect password.');
+                showAlert("Error", "Incorrect password");
             }
         } catch (error) {
             console.error('Firebase Error:', error);
-            Alert.alert('Error', 'An error occurred. Please try again.');
+            showAlert("Error", "An error occurred. Please try again");
         } finally {
             setLoading(false);
         }
@@ -87,6 +116,16 @@ const SignInScreen = ({ navigation }) => {
                     </Text>
                 </View>
             </View>
+
+            {/* Custom Alert */}
+            <CustomAlert
+                visible={isAlertVisible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                onClose={() => setIsAlertVisible(false)}
+                onConfirm={alertConfig.onConfirm}
+                showConfirmButton={alertConfig.showConfirmButton}
+            />
         </ImageBackground >
     );
 };

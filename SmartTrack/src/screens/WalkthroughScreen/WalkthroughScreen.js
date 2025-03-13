@@ -38,7 +38,7 @@ const WalkthroughScreen = ({navigation}) => {
         {index === slides.length - 1 && (
           <TouchableOpacity
             style={styles.startButton}
-            onPress={() =>  navigation.navigate('Start')}
+            onPress={() =>  navigation.replace('Start')}
           >
             <Text style={styles.startButtonText}>Start Journey</Text>
           </TouchableOpacity>
