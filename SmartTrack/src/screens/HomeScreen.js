@@ -129,7 +129,7 @@ const HomeScreen = ({ navigation }) => {
                             scrollEnabled={false}
                             renderItem={({ item }) => (
                                 <Card style={styles.card}>
-                                    <TouchableOpacity style={styles.cardContent} onPress={() => navigation.navigate('Map', { deviceId: item.deviceId })}>
+                                    <TouchableOpacity style={styles.cardContent} onPress={() => navigation.navigate('Map', { deviceId: item.deviceId, userRole: userData.role })}>
                                         <View style={styles.cardContent}>
                                             <Image source={require("../../assets/gps.png")} style={styles.image} />
                                             <View>

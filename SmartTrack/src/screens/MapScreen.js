@@ -2,18 +2,18 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, TextInput, Keyboard } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { database, ref, onValue } from '../firebaseConfig';
+import { database, ref, onValue, update } from '../firebaseConfig';
 import CustomAlert from '../Component/CustomAlert';
 
 export default function MapScreen({ route }) {
-    const { deviceId } = route.params;
+    const { deviceId, userRole } = route.params;
     const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
     const [userLocation, setUserLocation] = useState(null);
     const [error, setError] = useState(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [routeCoordinates, setRouteCoordinates] = useState([]);
     const [townName, setTownName] = useState('');
-    const [townCoordinates, setTownCoordinates] = useState(null);
+    const [townCoordinates, setTownCoordinates] = useState({ latitude: 0, longitude: 0 });
     const [isTownRouteActive, setIsTownRouteActive] = useState(false);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
@@ -49,6 +49,17 @@ export default function MapScreen({ route }) {
                 };
                 setLocation(newLocation);
 
+                // Set town coordinates, navigation and townName activation status from Firebase
+                if (data.townCoordinates) {
+                    setTownCoordinates(data.townCoordinates);
+                }
+                if (data.townNavigationActivation) {
+                    setIsTownRouteActive(data.townNavigationActivation === 1);
+                }
+                if (data.townName) {
+                    setTownName(data.townName);
+                }
+
                 // Focus the map on the new coordinates
                 if (mapRef.current) {
                     mapRef.current.animateToRegion({
@@ -75,13 +86,12 @@ export default function MapScreen({ route }) {
                 setError('Permission to access location was denied.');
                 return;
             }
-
             // Start watching user's location
             locationSubscription = await Location.watchPositionAsync(
                 {
                     accuracy: Location.Accuracy.High,
-                    timeInterval: 1000, // Update every second
-                    distanceInterval: 10, // Update every 10 meters
+                    timeInterval: 1000,
+                    distanceInterval: 5,
                 },
                 (newLocation) => {
                     const { latitude, longitude } = newLocation.coords;
@@ -117,14 +127,14 @@ export default function MapScreen({ route }) {
         if (isNavigating && userLocation && location.latitude !== 0 && location.longitude !== 0) {
             fetchRoute(userLocation, location);
         }
-    }, [isNavigating, userLocation, location]); // Add location as a dependency
+    }, [isNavigating, userLocation, location]);
 
     // Refetch town-to-device route when location changes and Start mode is active
     useEffect(() => {
         if (isTownRouteActive && townCoordinates && location.latitude !== 0 && location.longitude !== 0) {
             fetchRoute(townCoordinates, location);
         }
-    }, [location, isTownRouteActive, townCoordinates]); // Add location as a dependency
+    }, [location, isTownRouteActive, townCoordinates]);
 
     // Fetch route from OpenRouteService API
     const fetchRoute = async (start, end) => {
@@ -136,8 +146,8 @@ export default function MapScreen({ route }) {
 
             if (data.features && data.features.length > 0) {
                 const coordinates = data.features[0].geometry.coordinates.map(coord => ({
-                    latitude: coord[1], // Latitude is the second value
-                    longitude: coord[0], // Longitude is the first value
+                    latitude: coord[1],
+                    longitude: coord[0],
                 }));
                 setRouteCoordinates(coordinates);
             } else {
@@ -165,7 +175,6 @@ export default function MapScreen({ route }) {
                 setTownCoordinates(coordinates);
                 return coordinates;
             } else {
-                // Show an alert if the town is not found
                 showAlert("Town Not Found", "The town you entered could not be found. Please try again");
                 return null;
             }
@@ -181,10 +190,21 @@ export default function MapScreen({ route }) {
         Keyboard.dismiss();
 
         if (isTownRouteActive) {
+            // Stop town navigation
             setTownCoordinates(null);
             setRouteCoordinates([]);
             setIsTownRouteActive(false);
+
+            const deviceRef = ref(database, `devices/${deviceId}`);
+            await update(deviceRef, {
+                townNavigationActivation: 0,
+                townCoordinates: null,
+                townName: null,
+            }).catch((error) => {
+                console.error("Firebase Update Error:", error);
+            });
         } else {
+            // Start town navigation
             if (townName.trim() === '') {
                 showAlert("Empty", "Please enter a town name");
                 return;
@@ -192,9 +212,18 @@ export default function MapScreen({ route }) {
 
             const coordinates = await geocodeTown(townName);
             if (coordinates) {
-                fetchRoute(coordinates, location);
+                setTownCoordinates(coordinates);
                 setIsTownRouteActive(true);
-                setIsNavigating(false); // Disable Find Vehicle mode
+                setIsNavigating(false);
+
+                const deviceRef = ref(database, `devices/${deviceId}`);
+                await update(deviceRef, {
+                    townNavigationActivation: 1,
+                    townCoordinates: coordinates,
+                    townName: townName,
+                }).catch((error) => {
+                    console.error("Firebase Update Error:", error);
+                });
             }
         }
     };
@@ -221,28 +250,30 @@ export default function MapScreen({ route }) {
     return (
         <View style={styles.container}>
             {/* Text Input and Start/Stop Button */}
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Enter town name"
-                    value={townName}
-                    onChangeText={setTownName}
-                />
-                <TouchableOpacity
-                    style={[styles.startStopButton, isNavigating && styles.disabledButton]}
-                    onPress={handleTownRoute}
-                    disabled={isNavigating} // Disable Start button when Find Vehicle is active
-                >
-                    <Text style={styles.startStopButtonText}>
-                        {isTownRouteActive ? 'Stop' : 'Start'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
+            {userRole === 'driver' && (
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Enter town name"
+                        value={townName}
+                        onChangeText={setTownName}
+                    />
+                    <TouchableOpacity
+                        style={[styles.startStopButton, isNavigating && styles.disabledButton]}
+                        onPress={handleTownRoute}
+                        disabled={isNavigating}
+                    >
+                        <Text style={styles.startStopButtonText}>
+                            {isTownRouteActive ? 'Stop' : 'Start'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            )}
 
             <View style={{ flexDirection: 'row', zIndex: 100 }}>
                 {/* Floating Focus on Device Button */}
                 <TouchableOpacity
-                    style={[styles.floatingButton, styles.focusDeviceButton]}
+                    style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
                     onPress={() => {
                         if (mapRef.current) {
                             mapRef.current.animateToRegion({
@@ -258,9 +289,9 @@ export default function MapScreen({ route }) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.floatingButton, isTownRouteActive && styles.disabledButton]}
+                    style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
                     onPress={handleNavigate}
-                    disabled={isTownRouteActive} // Disable Find Vehicle button when Start is active
+                    disabled={isTownRouteActive}
                 >
                     <Text style={styles.floatingButtonText}>
                         {isNavigating ? 'Stop Finding' : 'Find Vehicle'}
@@ -277,13 +308,13 @@ export default function MapScreen({ route }) {
                     longitudeDelta: 0.0421,
                 }}
             >
-                {/* Device Marker */}
+                {/* Vehicle Marker */}
                 <Marker
                     coordinate={{
                         latitude: location.latitude,
                         longitude: location.longitude,
                     }}
-                    title="Device Location"
+                    title="Vehicle Location"
                 />
 
                 {/* Town Marker */}
@@ -364,6 +395,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         marginRight: 10,
         backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 2, height: 2 },
+        shadowOpacity: 0.8,
+        shadowRadius: 2,
+        elevation: 5,
     },
     startStopButton: {
         backgroundColor: 'rgb(67, 190, 231)',

@@ -81,15 +81,8 @@ export default function App() {
       const storedUserData = await AsyncStorage.getItem('userData');
       if (storedUserData) {
         const { loginDate } = JSON.parse(storedUserData);
-        const currentDate = new Date();
-        const storedDate = new Date(loginDate);
-        const timeDifference = currentDate - storedDate;
-        // console.log("currentDate: ",currentDate);
-        // console.log("storedDate: ",storedDate);
-        // console.log("timeDifference: ",timeDifference);
 
-
-        if (timeDifference  < 24 * 60 * 60 * 1000) {
+        if (loginDate) {
           setIsLoggedIn(true);
         } else {
           await AsyncStorage.removeItem('userData');

@@ -33,8 +33,15 @@ const SignInScreen = ({ navigation }) => {
             const snapshot = await get(userRef);
 
             if (!snapshot.exists()) {
-                showAlert("Error", "Account not found using this email. Please Sign up");
-                navigation.navigate('SignUp');
+                showAlert(
+                    "Account not found",
+                    "Account not found using this email. Please Sign up",
+                    true,
+                    async () => {
+                        await AsyncStorage.removeItem("userData");
+                        navigation.navigate('SignUp');
+                    }
+                );
                 return;
             }
 

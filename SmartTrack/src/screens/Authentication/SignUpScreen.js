@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { database, get, ref, set } from '../../firebaseConfig';
@@ -22,7 +22,10 @@ const SignUpScreen = ({ navigation }) => {
             title,
             message,
             showConfirmButton,
-            onConfirm,
+            onConfirm: onConfirm ? () => {
+                setIsAlertVisible(false); 
+                onConfirm(); 
+            } : null,
         });
         setIsAlertVisible(true);
     };
@@ -46,7 +49,7 @@ const SignUpScreen = ({ navigation }) => {
                     "Please login! Are you like to terminate process?",
                     true,
                     async () => {
-                        navigation.jumpTo("Login");
+                        navigation.replace("Login");
                     }
                 );
                 return;

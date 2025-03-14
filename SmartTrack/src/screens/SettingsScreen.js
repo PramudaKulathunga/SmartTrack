@@ -7,7 +7,6 @@ import {
     ScrollView,
     StyleSheet,
     ImageBackground,
-    Alert,
     Modal,
     TextInput
 } from "react-native";
@@ -17,8 +16,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { database, ref, set } from '../firebaseConfig';
 import CustomAlert from '../Component/CustomAlert';
 
+const defaultProfilePicture = require("../../assets/defalt_profile_picture.png");
+
 const SettingsScreen = ({ navigation }) => {
-    const [image, setImage] = useState(null);
+    const [image, setImage] = useState(defaultProfilePicture);
     const [expandedSection, setExpandedSection] = useState(null);
 
     const [userDetails, setUserDetails] = useState({});
@@ -28,6 +29,7 @@ const SettingsScreen = ({ navigation }) => {
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmNewPassword, setConfirmNewPassword] = useState("");
+    const [devices, setDevices] = useState({});
     const [editedName, setEditedName] = useState("");
     const [editedPhoneNumber, setEditedPhoneNumber] = useState("");
     const [isAlertVisible, setIsAlertVisible] = useState(false);
@@ -53,6 +55,15 @@ const SettingsScreen = ({ navigation }) => {
                 setUserDetails(userData);
                 setEditedName(userData.name || "");
                 setEditedPhoneNumber(userData.phoneNumber || "");
+                setDevices(userData.devices || "");
+
+                // Retrieve the profile picture from AsyncStorage
+                const profilePictureUri = await AsyncStorage.getItem(`profilePicture_${userData.email}`);
+                if (profilePictureUri) {
+                    setImage({ uri: profilePictureUri });
+                } else {
+                    setImage(defaultProfilePicture);
+                }
             }
         };
         fetchUserDetails();
@@ -61,14 +72,22 @@ const SettingsScreen = ({ navigation }) => {
     // Function to pick an image
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.All,
+            mediaTypes: ImagePicker.Images,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 1,
         });
 
         if (!result.canceled) {
-            setImage(result.assets[0].uri);
+            const imageUri = result.assets[0].uri;
+            setImage({ uri: imageUri });
+
+            // Store the image URI in AsyncStorage with the user's email as the key
+            try {
+                await AsyncStorage.setItem(`profilePicture_${userDetails.email}`, imageUri);
+            } catch (error) {
+                console.error("Error saving profile picture:", error);
+            }
         }
     };
 
@@ -179,7 +198,7 @@ const SettingsScreen = ({ navigation }) => {
             <View style={styles.profileSection}>
                 <TouchableOpacity onPress={pickImage}>
                     <Image
-                        source={image ? { uri: image } : require("../../assets/TeamMembers/Pramuda.jpeg")}
+                        source={image}
                         style={styles.profileImage}
                     />
                 </TouchableOpacity>
@@ -274,10 +293,10 @@ const SettingsScreen = ({ navigation }) => {
                     {/* Connected Devices (Visible when Devices is expanded) */}
                     {expandedSection === "devices" && (
                         <View style={styles.userDetailsContainer}>
-                            {connectedDevices.map((device) => (
+                            {devices.map((device) => (
                                 <View key={device.id} style={styles.detailRow}>
                                     <Text style={styles.detailLabel}>{device.name}</Text>
-                                    <Text style={styles.detailValue}>{device.lastActive}</Text>
+                                    <Text style={styles.detailValue}>{device.deviceId}</Text>
                                 </View>
                             ))}
                         </View>
