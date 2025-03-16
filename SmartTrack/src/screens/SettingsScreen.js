@@ -279,9 +279,20 @@ const SettingsScreen = ({ navigation }) => {
                     {/* Privacy Details (Visible when expanded) */}
                     {expandedSection === "privacy" && (
                         <View style={styles.userDetailsContainer}>
-                            <Text style={styles.detailLabel}>Policy 01</Text>
-                            <Text style={styles.detailLabel}>Policy 02</Text>
-                            <Text style={styles.detailLabel}>Policy 03</Text>
+                            <Text style={styles.detailLabelTitle}>Privacy Policy</Text>
+                            <Text style={styles.detailLabel}>1. Collects location, speed, temperature, fire data, and emergency logs for monitoring and safety.</Text>
+                            <Text style={styles.detailLabel}>2. Data is secured. only accessible to authorized users.</Text>
+                            <Text style={styles.detailLabelTitle}>Terms of Service</Text>
+                            <Text style={styles.detailLabel}>1. Users must be 18+ and have the right to install/use the ESP32 device.</Text>
+                            <Text style={styles.detailLabel}>2. Ensure proper setup and configuration of the device.</Text>
+                            <Text style={styles.detailLabel}>3. Unauthorized tracking, tampering with the ESP32 device.</Text>
+                            <Text style={styles.detailLabel}>4. Owners get alerts for speed limits, fire, or abnormal conditions.</Text>
+                            <Text style={styles.detailLabel}>5. Drivers can use emergency call and buzzer for genuine emergencies.</Text>
+                            <Text style={styles.detailLabelTitle}>Safety and Security Policy</Text>
+                            <Text style={styles.detailLabel}>1. ESP32 is hidden and tamper-resistant for theft prevention.</Text>
+                            <Text style={styles.detailLabelTitle}>Cookie Policy</Text>
+                            <Text style={styles.detailLabel}>1. Cookies are used for browsing experience and functionality.</Text>
+                            <Text style={styles.detailLabel}>2. Users can manage cookies via application settings.</Text>
                         </View>
                     )}
 
@@ -312,9 +323,17 @@ const SettingsScreen = ({ navigation }) => {
                     {/* Help Details (Visible when expanded) */}
                     {expandedSection === "help" && (
                         <View style={styles.userDetailsContainer}>
-                            <Text style={styles.detailLabel}>Help 01</Text>
-                            <Text style={styles.detailLabel}>Help 02</Text>
-                            <Text style={styles.detailLabel}>Help 03</Text>
+                            <Text style={styles.detailLabelTitle}>Home Screen</Text>
+                            <Text style={styles.detailLabel}>1. Owner can add more devices but driver can add only one device</Text>
+                            <Text style={styles.detailLabel}>2. You can add devices with any name what you want and anytime you can remove added devices.</Text>
+                            <Text style={styles.detailLabel}>3. Drive can active alarm, get emergency call to owner, check temperature and humidity in vehicle using action button.</Text>
+                            <Text style={styles.detailLabelTitle}>Map functions</Text>
+                            <Text style={styles.detailLabel}>1. Driver can navigate route between selected town and vehicle. when driver navigating, owner can check that route.</Text>
+                            <Text style={styles.detailLabel}>2. When driver or owner stay outside, they can navigate vehicle position using "Find Vehicle" button.</Text>
+                            <Text style={styles.detailLabel}>3. Using "Focus on Vehicle" button, you can stay focus on your vehicle.</Text>
+                            <Text style={styles.detailLabel}>4. Owner can active alarm, check temperature and humidity in vehicle and speed of vehicle using action button.</Text>
+                            <Text style={styles.detailLabelTitle}>Settings</Text>
+                            <Text style={styles.detailLabel}>1. You can change your profile picture, name, phone number and password in settings section.</Text>
                         </View>
                     )}
 
@@ -509,9 +528,17 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         marginBottom: 10,
     },
+    detailLabelTitle: {
+        fontSize: 14,
+        color: "#000",
+        fontWeight: 'bold',
+        marginVertical: 10
+    },
     detailLabel: {
         fontSize: 14,
         color: "#666",
+        paddingLeft: 5,
+        marginBottom: 5
     },
     detailValue: {
         fontSize: 14,

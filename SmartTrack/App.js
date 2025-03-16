@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, LogBox, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -17,6 +17,12 @@ import AddingScreen from './src/screens/AddingScreen';
 import StartScreen from './src/screens/Authentication/StartScreen';
 import SignInScreen from './src/screens/Authentication/SignInScreen';
 import SignUpScreen from './src/screens/Authentication/SignUpScreen';
+import SplashScreen from './src/screens/SplashScreen';
+
+// Suppress the specific error message
+LogBox.ignoreLogs([
+  'Expected static flag was missing. Please notify the React team',
+]);
 
 // Create Navigators
 const Stack = createStackNavigator();
@@ -24,7 +30,6 @@ const Tab = createBottomTabNavigator();
 
 // Bottom Tab Navigator
 function BottomTabs() {
-
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -54,7 +59,7 @@ function BottomTabs() {
     >
       <Tab.Screen name="Add" component={AddingScreen} options={{ tabBarLabel: "", headerShown: false }} />
       <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Map" component={MapScreen} options={{ headerShown: false }}  />
+      <Tab.Screen name="Map" component={MapScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
       <Tab.Screen name="About Us" component={AboutUsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
@@ -65,6 +70,7 @@ function BottomTabs() {
 export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSplashVisible, setIsSplashVisible] = useState(true);
 
   useEffect(() => {
     const checkFirstLaunchAndLogin = async () => {
@@ -80,20 +86,24 @@ export default function App() {
       // Check for stored user data
       const storedUserData = await AsyncStorage.getItem('userData');
       if (storedUserData) {
-        const { loginDate } = JSON.parse(storedUserData);
-
-        if (loginDate) {
-          setIsLoggedIn(true);
-        } else {
-          await AsyncStorage.removeItem('userData');
-          setIsLoggedIn(false);
-        }
+        setIsLoggedIn(true);
       }
     };
 
-    checkFirstLaunchAndLogin();
+      checkFirstLaunchAndLogin();
   }, []);
 
+  // Hide splash screen after animation ends
+  const hideSplashScreen = () => {
+    setIsSplashVisible(false);
+  };
+
+  // Render splash screen while loading
+  if (isSplashVisible) {
+    return <SplashScreen onAnimationEnd={hideSplashScreen} />;
+  }
+
+  // Render nothing while checking initial state
   if (isFirstLaunch === null) {
     return null;
   }

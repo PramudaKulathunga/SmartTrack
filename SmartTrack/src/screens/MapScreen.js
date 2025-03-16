@@ -4,6 +4,7 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { database, ref, onValue, update } from '../firebaseConfig';
 import CustomAlert from '../Component/CustomAlert';
+import FloatingActionButton from '../Component/FloatingActionButton';
 
 export default function MapScreen({ route }) {
     const { deviceId, userRole } = route.params;
@@ -17,9 +18,12 @@ export default function MapScreen({ route }) {
     const [isTownRouteActive, setIsTownRouteActive] = useState(false);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
+    const [isFocusing, setIsFocusing] = useState(false);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+
     const mapRef = useRef(null);
 
-    const OPENROUTESERVICE_API_KEY = '5b3ce3597851110001cf62489328cf8a43884ad88e8424d11b28b37b'; // Replace with your API key
+    const OPENROUTESERVICE_API_KEY = '5b3ce3597851110001cf62489328cf8a43884ad88e8424d11b28b37b';
 
     // Function to show custom alert
     const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
@@ -61,12 +65,13 @@ export default function MapScreen({ route }) {
                 }
 
                 // Focus the map on the new coordinates
-                if (mapRef.current) {
+                if (isFirstLoad && mapRef.current) {
                     mapRef.current.animateToRegion({
                         ...newLocation,
                         latitudeDelta: 0.0922,
                         longitudeDelta: 0.0421,
                     }, 1000);
+                    setIsFirstLoad(false);
                 }
             } else {
                 setError("Device data not found in Firebase.");
@@ -74,7 +79,29 @@ export default function MapScreen({ route }) {
         });
 
         return () => unsubscribe();
-    }, [deviceId]);
+    }, [deviceId, isFirstLoad]);
+
+    //Device focusing
+    useEffect(() => {
+        let intervalId;
+
+        if (isFocusing && mapRef.current) {
+            intervalId = setInterval(() => {
+                mapRef.current.animateToRegion({
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                }, 1000);
+            }, 1000);
+        }
+
+        return () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [isFocusing, location]);
 
     // Get user's current location and fetch route when navigating
     useEffect(() => {
@@ -270,22 +297,19 @@ export default function MapScreen({ route }) {
                 </View>
             )}
 
-            <View style={{ flexDirection: 'row', zIndex: 100 }}>
+            <View style={{
+                flexDirection: 'row', zIndex: 100, justifyContent: 'center',
+            }}>
                 {/* Floating Focus on Device Button */}
                 <TouchableOpacity
                     style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
                     onPress={() => {
-                        if (mapRef.current) {
-                            mapRef.current.animateToRegion({
-                                latitude: location.latitude,
-                                longitude: location.longitude,
-                                latitudeDelta: 0.0922,
-                                longitudeDelta: 0.0421,
-                            }, 1000);
-                        }
+                        setIsFocusing((prev) => !prev);
                     }}
                 >
-                    <Text style={styles.floatingButtonText}>Focus on Vehicle</Text>
+                    <Text style={styles.floatingButtonText}>
+                        {isFocusing ? 'Stop Focusing' : 'Focus on Vehicle'}
+                    </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -298,6 +322,7 @@ export default function MapScreen({ route }) {
                     </Text>
                 </TouchableOpacity>
             </View>
+
             <MapView
                 ref={mapRef}
                 style={styles.map}
@@ -360,6 +385,13 @@ export default function MapScreen({ route }) {
                 )}
             </MapView>
 
+            {/* Floating rote */}
+            {userRole === 'owner' && (
+                <View style={styles.fabContainer}>
+                    <FloatingActionButton userRole={userRole} deviceId={deviceId} />
+                </View>
+            )}
+
             {/* Custom Alert */}
             <CustomAlert
                 visible={isAlertVisible}
@@ -376,7 +408,6 @@ export default function MapScreen({ route }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
     },
     inputContainer: {
         flexDirection: 'row',
@@ -418,8 +449,9 @@ const styles = StyleSheet.create({
     },
     map: {
         width: '100%',
-        height: '100%',
+        height: '98%',
         marginTop: -150,
+        zIndex: 1
     },
     floatingButton: {
         alignSelf: 'center',
@@ -451,6 +483,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     disabledButton: {
-        backgroundColor: 'gray', // Disabled button color
+        backgroundColor: 'gray',
+    },
+    fabContainer: {
+        flex: 1,
+        bottom: 80,
+        right: 10,
+        zIndex: 200,
     },
 });

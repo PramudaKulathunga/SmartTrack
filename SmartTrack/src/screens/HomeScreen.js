@@ -1,11 +1,12 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, TextInput, Modal, ScrollView, ImageBackground, Keyboard } from "react-native";
+import { View, Text, FlatList, Image, StyleSheet, TouchableOpacity, TextInput, Modal, ImageBackground, Keyboard } from "react-native";
 import { Card } from "react-native-paper";
 import { database, ref, set, get } from '../firebaseConfig';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from '@expo/vector-icons';
 import CustomAlert from '../Component/CustomAlert';
 import { useFocusEffect } from "@react-navigation/native";
+import FloatingActionButton from "../Component/FloatingActionButton";
 
 const HomeScreen = ({ navigation }) => {
 
@@ -15,6 +16,8 @@ const HomeScreen = ({ navigation }) => {
     const [newDeviceName, setNewDeviceName] = useState("");
     const [newDeviceId, setNewDeviceId] = useState("");
     const [userData, setUserData] = useState(null);
+    const [userRole, setUserRole] = useState(null);
+    const [deviceId, setDeviceId] = useState(null);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
 
@@ -37,6 +40,8 @@ const HomeScreen = ({ navigation }) => {
                 if (storedUserData) {
                     const parsedUserData = JSON.parse(storedUserData);
                     setUserData(parsedUserData);
+                    setUserRole(parsedUserData.role);
+                    setDeviceId(parsedUserData.devices[0].deviceId);
                     fetchDevices(parsedUserData.email);
                 }
             };
@@ -111,48 +116,49 @@ const HomeScreen = ({ navigation }) => {
             </View>
             <View style={{ marginTop: 80 }} />
 
-            <ScrollView
-                contentContainerStyle={styles.scrollContainer}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-            >
-                <View style={styles.buttonContainer}>
-                    {devices.length === 0 ? (
-                        <View style={styles.placeholderContainer}>
-                            <Text style={styles.placeholderText}>No devices added yet.</Text>
-                        </View>
-                    ) : (
+            <View style={styles.buttonContainer}>
+                {devices.length === 0 ? (
+                    <View style={styles.placeholderContainer}>
+                        <Text style={styles.placeholderText}>No devices added yet.</Text>
+                    </View>
+                ) : (
 
-                        <FlatList
-                            data={devices}
-                            keyExtractor={(item) => item.deviceId}
-                            scrollEnabled={false}
-                            renderItem={({ item }) => (
-                                <Card style={styles.card}>
-                                    <TouchableOpacity style={styles.cardContent} onPress={() => navigation.navigate('Map', { deviceId: item.deviceId, userRole: userData.role })}>
-                                        <View style={styles.cardContent}>
-                                            <Image source={require("../../assets/gps.png")} style={styles.image} />
-                                            <View>
-                                                <Text style={styles.itemName}>{item.name}</Text>
-                                                <Text style={styles.itemPrice}>ID: {item.deviceId}</Text>
-                                            </View>
-                                        </View>
+                    <FlatList
+                        data={devices}
+                        keyExtractor={(item) => item.deviceId}
+                        scrollEnabled={true}
+                        renderItem={({ item }) => (
+                            <Card style={[styles.card, { marginTop: userRole === 'driver' ? 30 : 0 }]}>
+                                <TouchableOpacity style={styles.cardContent} onPress={() => navigation.navigate('Map', { deviceId: item.deviceId, userRole: userData.role })}>
+                                    <View style={styles.cardContent}>
+                                        <Image source={require("../../assets/gps.png")} style={styles.image} />
                                         <View>
-                                            <TouchableOpacity onPress={() => removeDevice(item.deviceId)} style={styles.trash}>
-                                                <Ionicons name="trash" size={25} color="red" />
-                                            </TouchableOpacity>
+                                            <Text style={styles.itemName}>{item.name}</Text>
+                                            <Text style={styles.itemPrice}>ID: {item.deviceId}</Text>
                                         </View>
-                                    </TouchableOpacity>
-                                </Card>
-                            )}
-                        />
-                    )}
-                </View>
+                                    </View>
+                                    <View>
+                                        <TouchableOpacity onPress={() => removeDevice(item.deviceId)} style={styles.trash}>
+                                            <Ionicons name="trash" size={25} color="red" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableOpacity>
+                            </Card>
+                        )}
+                    />
+                )}
 
                 <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
                     <Text style={styles.addButtonText}>Add New Device</Text>
                 </TouchableOpacity>
-            </ScrollView>
+            </View>
+
+            {/* Floating rote */}
+            {userRole === 'driver' && (
+                <View style={styles.fabContainer}>
+                    <FloatingActionButton userRole={userRole} deviceId={deviceId} />
+                </View>
+            )}
 
             {/* Modal for Adding Device */}
             <Modal visible={modalVisible} animationType="slide" transparent={true}>
@@ -200,7 +206,6 @@ const styles = StyleSheet.create({
     background: {
         flex: 1,
         resizeMode: 'cover',
-        justifyContent: 'center',
     },
     titleContainer: {
         marginTop: 80,
@@ -212,12 +217,10 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontWeight: 'bold',
     },
-    scrollContainer: {
-        padding: 20,
-        paddingBottom: 150
-    },
     buttonContainer: {
         width: "100%",
+        maxHeight: "50%",
+        paddingHorizontal: 20
     },
     placeholderContainer: {
         height: 150,
@@ -346,6 +349,12 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 16,
         fontWeight: "bold",
+    },
+    fabContainer: {
+        flex: 1,
+        bottom: 80,
+        right: 10,
+        zIndex: 200,
     },
 });
 

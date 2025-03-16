@@ -8,8 +8,8 @@ const GradientBackground = ({ children, style }) => {
             <Svg height="100%" width="100%" style={StyleSheet.absoluteFillObject}>
                 <Defs>
                     <LinearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <Stop offset="0%" stopColor="rgb(15, 164, 220)" stopOpacity="1" />
-                        <Stop offset="100%" stopColor="rgb(67, 190, 231)" stopOpacity="1" />
+                        <Stop offset="0%" stopColor="rgb(0, 178, 255)" stopOpacity="1" />
+                        <Stop offset="30%" stopColor="rgb(30, 200, 234)" stopOpacity="1" />
                     </LinearGradient>
                 </Defs>
                 <Rect width="100%" height="100%" fill="url(#grad)" />
