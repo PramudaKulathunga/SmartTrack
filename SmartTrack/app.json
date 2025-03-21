@@ -4,25 +4,41 @@
     "slug": "SmartTrack",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo_transparent.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo_transparent.png",
-      "resizeMode": "cover",
-      "backgroundColor": "transparent"
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/App_logo.png",
-        "backgroundColor": "rgb(30, 200, 234)" 
-      }
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAQOPGo5reYOtGmNzTtsUCw-IYAkiAEWoE"
+        }
+      },
+      "package": "com.pramudakulathunga.SmartTrack"
     },
     "web": {
-      "favicon": "./assets/logo_transparent.png"
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ce1cbc47-1716-40cb-84c2-c5d0ca9a5f4f"
+      }
     }
   }
 }

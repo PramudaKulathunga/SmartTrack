@@ -7,8 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import CustomAlert from '../Component/CustomAlert';
 import { useFocusEffect } from "@react-navigation/native";
 import FloatingActionButton from "../Component/FloatingActionButton";
+import { useNavigation } from "@react-navigation/native";
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ setIsMapIconVisible }) => {
 
     // Modal & Input State
     const [devices, setDevices] = useState([]);
@@ -20,6 +21,7 @@ const HomeScreen = ({ navigation }) => {
     const [deviceId, setDeviceId] = useState(null);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
+    const navigation = useNavigation();
 
     // Function to show custom alert
     const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
@@ -48,6 +50,11 @@ const HomeScreen = ({ navigation }) => {
             fetchUserData();
         }, [])
     );
+
+    const handleNavigateToMap = (deviceId, userRole) => {
+        setIsMapIconVisible(true);
+        navigation.navigate('Map', { deviceId, userRole });
+    };
 
     const fetchDevices = async (email) => {
         const devicesRef = ref(database, `users/${email.replace(/\./g, ',')}/devices`);
@@ -129,7 +136,7 @@ const HomeScreen = ({ navigation }) => {
                         scrollEnabled={true}
                         renderItem={({ item }) => (
                             <Card style={[styles.card, { marginTop: userRole === 'driver' ? 30 : 0 }]}>
-                                <TouchableOpacity style={styles.cardContent} onPress={() => navigation.navigate('Map', { deviceId: item.deviceId, userRole: userData.role })}>
+                                <TouchableOpacity style={styles.cardContent} onPress={() => handleNavigateToMap(item.deviceId, userData.role)}>
                                     <View style={styles.cardContent}>
                                         <Image source={require("../../assets/gps.png")} style={styles.image} />
                                         <View>

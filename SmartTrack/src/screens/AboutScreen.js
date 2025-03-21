@@ -23,11 +23,13 @@ export default function AboutUsScreen() {
                 <View style={styles.instructorsContainer}>
                     <View style={styles.instructor}>
                         <Image source={require("../../assets/TeamMembers/Pramuda.jpeg")} style={styles.instructorImage} />
-                        <Text style={styles.instructorName}>Pramuda Kulathunga</Text>
+                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Pramuda Kulathunga</Text>
+                        <Text style={styles.instructorName}>(App Developer)</Text>
                     </View>
                     <View style={styles.instructor}>
                         <Image source={require("../../assets/TeamMembers/Pasindu.jpeg")} style={styles.instructorImage} />
-                        <Text style={styles.instructorName}>Pasindu Chandrasiri</Text>
+                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Pasindu Chandrasiri</Text>
+                        <Text style={styles.instructorName}>(Firmware Developer)</Text>
                     </View>
                 </View>
 
@@ -35,11 +37,13 @@ export default function AboutUsScreen() {
                 <View style={styles.instructorsContainer}>
                     <View style={styles.instructor}>
                         <Image source={require("../../assets/TeamMembers/Sasindu.jpeg")} style={styles.instructorImage} />
-                        <Text style={styles.instructorName}>Sasindu Amesh</Text>
+                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Sasindu Amesh</Text>
+                        <Text style={styles.instructorName}>(Circuit & PCB Designer)</Text>
                     </View>
                     <View style={styles.instructor}>
                         <Image source={require("../../assets/TeamMembers/Dulara.jpeg")} style={styles.instructorImage} />
-                        <Text style={styles.instructorName}>Dulara Shrimantha</Text>
+                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Dulara Shrimantha</Text>
+                        <Text style={styles.instructorName}>(Firmware Developer)</Text>
                     </View>
                 </View>
 

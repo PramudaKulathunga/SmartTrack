@@ -1,16 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, TextInput, Keyboard } from 'react-native';
-import MapView, { Marker, Polyline } from 'react-native-maps';
+import { View, StyleSheet, Text, TouchableOpacity, TextInput, Keyboard, TouchableWithoutFeedback, FlatList } from 'react-native';
+import MapView, { UrlTile, Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { database, ref, onValue, update } from '../firebaseConfig';
 import CustomAlert from '../Component/CustomAlert';
 import FloatingActionButton from '../Component/FloatingActionButton';
 
-export default function MapScreen({ route }) {
+export default function MapScreen({ route, navigation }) {
     const { deviceId, userRole } = route.params;
     const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
     const [userLocation, setUserLocation] = useState(null);
-    const [error, setError] = useState(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const [routeCoordinates, setRouteCoordinates] = useState([]);
     const [townName, setTownName] = useState('');
@@ -20,6 +19,7 @@ export default function MapScreen({ route }) {
     const [alertConfig, setAlertConfig] = useState({});
     const [isFocusing, setIsFocusing] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const [suggestions, setSuggestions] = useState([]);
 
     const mapRef = useRef(null);
 
@@ -39,7 +39,7 @@ export default function MapScreen({ route }) {
     // Fetch device location from Firebase
     useEffect(() => {
         if (!deviceId) {
-            setError("Device ID is missing.");
+            showAlert("Error", "Device ID is missing");
             return;
         }
 
@@ -56,12 +56,23 @@ export default function MapScreen({ route }) {
                 // Set town coordinates, navigation and townName activation status from Firebase
                 if (data.townCoordinates) {
                     setTownCoordinates(data.townCoordinates);
+                } else {
+                    setTownCoordinates(null);
                 }
+
                 if (data.townNavigationActivation) {
                     setIsTownRouteActive(data.townNavigationActivation === 1);
+                    if (data.townNavigationActivation === 0) {
+                        setRouteCoordinates([]);
+                    }
+                } else {
+                    setIsTownRouteActive(false);
                 }
+
                 if (data.townName) {
                     setTownName(data.townName);
+                } else {
+                    setTownName('');
                 }
 
                 // Focus the map on the new coordinates
@@ -74,12 +85,37 @@ export default function MapScreen({ route }) {
                     setIsFirstLoad(false);
                 }
             } else {
-                setError("Device data not found in Firebase.");
+                showAlert("Error", "Device data not found in Firebase");
             }
         });
 
         return () => unsubscribe();
     }, [deviceId, isFirstLoad]);
+
+    // Fetch city suggestions as the user types
+    const fetchCitySuggestions = async (query) => {
+        if (query.trim() === '') {
+            setSuggestions([]);
+            return;
+        }
+
+        const url = `https://api.openrouteservice.org/geocode/autocomplete?api_key=${OPENROUTESERVICE_API_KEY}&text=${query}&boundary.country=LK`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.features && data.features.length > 0) {
+                const suggestions = data.features.map(feature => feature.properties.label);
+                setSuggestions(suggestions);
+            } else {
+                setSuggestions([]);
+            }
+        } catch (error) {
+            console.error("Autocomplete Error:", error);
+            setSuggestions([]);
+        }
+    };
 
     //Device focusing
     useEffect(() => {
@@ -110,7 +146,7 @@ export default function MapScreen({ route }) {
         const startLocationTracking = async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                setError('Permission to access location was denied.');
+                showAlert("Warning!", "Permission to access location was denied");
                 return;
             }
             // Start watching user's location
@@ -178,11 +214,10 @@ export default function MapScreen({ route }) {
                 }));
                 setRouteCoordinates(coordinates);
             } else {
-                setError("Failed to fetch route data.");
+                showAlert("Route Error", "Failed to fetch route data. Please try again.");
             }
         } catch (error) {
-            console.error("API Error:", error);
-            setError("Error fetching route data: " + error.message);
+            showAlert("Route Error", "An error occurred while fetching the route. Please try again.");
         }
     };
 
@@ -199,6 +234,18 @@ export default function MapScreen({ route }) {
                     latitude: data.features[0].geometry.coordinates[1],
                     longitude: data.features[0].geometry.coordinates[0],
                 };
+
+                // Check if the town is within Sri Lanka's boundaries
+                const isInSriLanka = (
+                    coordinates.latitude >= 5.9 && coordinates.latitude <= 9.9 &&
+                    coordinates.longitude >= 79.5 && coordinates.longitude <= 81.9
+                );
+
+                if (!isInSriLanka) {
+                    showAlert("Out of Range", "That city is overseas. Please enter a town within Sri Lanka.");
+                    return null;
+                }
+
                 setTownCoordinates(coordinates);
                 return coordinates;
             } else {
@@ -266,142 +313,171 @@ export default function MapScreen({ route }) {
         setIsNavigating((prev) => !prev);
     };
 
-    if (error) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>{error}</Text>
-            </View>
-        );
-    }
-
     return (
-        <View style={styles.container}>
-            {/* Text Input and Start/Stop Button */}
-            {userRole === 'driver' && (
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Enter town name"
-                        value={townName}
-                        onChangeText={setTownName}
-                    />
+        <TouchableWithoutFeedback onPress={() => {
+            Keyboard.dismiss();
+            setSuggestions([]);
+        }}>
+
+            <View style={styles.container}>
+                {/* Text Input and Start/Stop Button */}
+                {userRole === 'driver' && (
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter town name"
+                            value={townName}
+                            onChangeText={(text) => {
+                                setTownName(text);
+                                fetchCitySuggestions(text);
+                            }}
+                        />
+                        <TouchableOpacity
+                            style={[styles.startStopButton, isNavigating && styles.disabledButton]}
+                            onPress={handleTownRoute}
+                            disabled={isNavigating}
+                        >
+                            <Text style={styles.startStopButtonText}>
+                                {isTownRouteActive ? 'Stop' : 'Start'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+                {/* Display Suggestions */}
+                {suggestions.length > 0 && (
+                    <View style={styles.suggestionsContainer}>
+                        <FlatList
+                            data={suggestions}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.suggestionItem}
+                                    onPress={() => {
+                                        setTownName(item); // Set the selected suggestion as the town name
+                                        setSuggestions([]); // Clear suggestions
+                                    }}
+                                >
+                                    <Text style={styles.suggestionText}>{item}</Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                )}
+
+                <View style={{
+                    flexDirection: 'row', zIndex: 100, justifyContent: 'center',
+                }}>
+                    {/* Floating Focus on Device Button */}
                     <TouchableOpacity
-                        style={[styles.startStopButton, isNavigating && styles.disabledButton]}
-                        onPress={handleTownRoute}
-                        disabled={isNavigating}
+                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
+                        onPress={() => {
+                            setIsFocusing((prev) => !prev);
+                        }}
                     >
-                        <Text style={styles.startStopButtonText}>
-                            {isTownRouteActive ? 'Stop' : 'Start'}
+                        <Text style={styles.floatingButtonText}>
+                            {isFocusing ? 'Stop Focusing' : 'Focus on Vehicle'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
+                        onPress={handleNavigate}
+                        disabled={isTownRouteActive}
+                    >
+                        <Text style={styles.floatingButtonText}>
+                            {isNavigating ? 'Stop Finding' : 'Find Vehicle'}
                         </Text>
                     </TouchableOpacity>
                 </View>
-            )}
 
-            <View style={{
-                flexDirection: 'row', zIndex: 100, justifyContent: 'center',
-            }}>
-                {/* Floating Focus on Device Button */}
-                <TouchableOpacity
-                    style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
-                    onPress={() => {
-                        setIsFocusing((prev) => !prev);
-                    }}
-                >
-                    <Text style={styles.floatingButtonText}>
-                        {isFocusing ? 'Stop Focusing' : 'Focus on Vehicle'}
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
-                    onPress={handleNavigate}
-                    disabled={isTownRouteActive}
-                >
-                    <Text style={styles.floatingButtonText}>
-                        {isNavigating ? 'Stop Finding' : 'Find Vehicle'}
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            <MapView
-                ref={mapRef}
-                style={styles.map}
-                initialRegion={{
-                    latitude: location.latitude,
-                    longitude: location.longitude,
-                    latitudeDelta: 0.0922,
-                    longitudeDelta: 0.0421,
-                }}
-            >
-                {/* Vehicle Marker */}
-                <Marker
-                    coordinate={{
+                <MapView
+                    ref={mapRef}
+                    style={styles.map}
+                    initialRegion={{
                         latitude: location.latitude,
                         longitude: location.longitude,
+                        latitudeDelta: 0.0922,
+                        longitudeDelta: 0.0421,
                     }}
-                    title="Vehicle Location"
-                />
+                >
 
-                {/* Town Marker */}
-                {townCoordinates && (
+                    {/* OpenStreetMap tiles */}
+                    <UrlTile
+                        urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        maximumZ={19}
+                    />
+
+                    {/* Vehicle Marker */}
                     <Marker
                         coordinate={{
-                            latitude: townCoordinates.latitude,
-                            longitude: townCoordinates.longitude,
+                            latitude: location.latitude,
+                            longitude: location.longitude,
                         }}
-                        title="Town Location"
+                        title="Vehicle Location"
                         pinColor="green"
                     />
+
+                    {/* Town Marker */}
+                    {townCoordinates && (
+                        <Marker
+                            coordinate={{
+                                latitude: townCoordinates.latitude,
+                                longitude: townCoordinates.longitude,
+                            }}
+                            title="Town Location"
+                            pinColor="green"
+                        />
+                    )}
+
+                    {/* User Marker */}
+                    {userLocation && (
+                        <Marker
+                            coordinate={{
+                                latitude: userLocation.latitude,
+                                longitude: userLocation.longitude,
+                            }}
+                            title="Your Location"
+                            pinColor="blue"
+                        />
+                    )}
+
+                    {/* Polyline between town and device */}
+                    {isTownRouteActive && routeCoordinates.length > 0 && (
+                        <Polyline
+                            coordinates={routeCoordinates}
+                            strokeColor="#0000FF"
+                            strokeWidth={4}
+                        />
+                    )}
+
+                    {/* Polyline between user and device */}
+                    {isNavigating && routeCoordinates.length > 0 && (
+                        <Polyline
+                            coordinates={routeCoordinates}
+                            strokeColor="#FF0000"
+                            strokeWidth={4}
+                        />
+                    )}
+                </MapView>
+
+                {/* Floating rote */}
+                {userRole === 'owner' && (
+                    <View style={styles.fabContainer}>
+                        <FloatingActionButton userRole={userRole} deviceId={deviceId} />
+                    </View>
                 )}
 
-                {/* User Marker */}
-                {userLocation && (
-                    <Marker
-                        coordinate={{
-                            latitude: userLocation.latitude,
-                            longitude: userLocation.longitude,
-                        }}
-                        title="Your Location"
-                        pinColor="blue"
-                    />
-                )}
-
-                {/* Polyline between town and device */}
-                {isTownRouteActive && routeCoordinates.length > 0 && (
-                    <Polyline
-                        coordinates={routeCoordinates}
-                        strokeColor="#0000FF"
-                        strokeWidth={4}
-                    />
-                )}
-
-                {/* Polyline between user and device */}
-                {isNavigating && routeCoordinates.length > 0 && (
-                    <Polyline
-                        coordinates={routeCoordinates}
-                        strokeColor="#FF0000"
-                        strokeWidth={4}
-                    />
-                )}
-            </MapView>
-
-            {/* Floating rote */}
-            {userRole === 'owner' && (
-                <View style={styles.fabContainer}>
-                    <FloatingActionButton userRole={userRole} deviceId={deviceId} />
-                </View>
-            )}
-
-            {/* Custom Alert */}
-            <CustomAlert
-                visible={isAlertVisible}
-                title={alertConfig.title}
-                message={alertConfig.message}
-                onClose={() => setIsAlertVisible(false)}
-                onConfirm={alertConfig.onConfirm}
-                showConfirmButton={alertConfig.showConfirmButton}
-            />
-        </View>
+                {/* Custom Alert */}
+                <CustomAlert
+                    visible={isAlertVisible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    onClose={() => setIsAlertVisible(false)}
+                    onConfirm={alertConfig.onConfirm}
+                    showConfirmButton={alertConfig.showConfirmButton}
+                />
+            </View>
+        </TouchableWithoutFeedback>
     );
 }
 
@@ -490,5 +566,26 @@ const styles = StyleSheet.create({
         bottom: 80,
         right: 10,
         zIndex: 200,
+    },
+    suggestionsContainer: {
+        position: 'absolute',
+        top: 90, // Adjust based on your layout
+        left: 20,
+        right: 20,
+        backgroundColor: 'white',
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        maxHeight: 150,
+        zIndex: 200,
+        elevation: 5,
+    },
+    suggestionItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    suggestionText: {
+        fontSize: 16,
     },
 });

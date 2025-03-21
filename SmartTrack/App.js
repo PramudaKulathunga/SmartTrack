@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { View, LogBox, StyleSheet } from 'react-native';
+import { View, LogBox, StyleSheet, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -22,6 +22,7 @@ import SplashScreen from './src/screens/SplashScreen';
 // Suppress the specific error message
 LogBox.ignoreLogs([
   'Expected static flag was missing. Please notify the React team',
+  "The action 'NAVIGATE' with payload",
 ]);
 
 // Create Navigators
@@ -30,6 +31,8 @@ const Tab = createBottomTabNavigator();
 
 // Bottom Tab Navigator
 function BottomTabs() {
+  const [isMapIconVisible, setIsMapIconVisible] = useState(false);
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -58,8 +61,10 @@ function BottomTabs() {
       })}
     >
       <Tab.Screen name="Add" component={AddingScreen} options={{ tabBarLabel: "", headerShown: false }} />
-      <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Map" component={MapScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Home" c children={() => <HomeScreen setIsMapIconVisible={setIsMapIconVisible} />} options={{ headerShown: false }} />
+      {isMapIconVisible && (
+        <Tab.Screen name="Map" component={MapScreen} options={{ headerShown: false }} />
+      )}
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false }} />
       <Tab.Screen name="About Us" component={AboutUsScreen} options={{ headerShown: false }} />
     </Tab.Navigator>
@@ -90,7 +95,7 @@ export default function App() {
       }
     };
 
-      checkFirstLaunchAndLogin();
+    checkFirstLaunchAndLogin();
   }, []);
 
   // Hide splash screen after animation ends
@@ -100,7 +105,16 @@ export default function App() {
 
   // Render splash screen while loading
   if (isSplashVisible) {
-    return <SplashScreen onAnimationEnd={hideSplashScreen} />;
+    return (
+      <>
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle="dark-content"
+        />
+        <SplashScreen onAnimationEnd={hideSplashScreen} />
+      </>
+    );
   }
 
   // Render nothing while checking initial state
@@ -109,28 +123,36 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={isLoggedIn ? "Main" : "Start"}>
-        {isFirstLaunch && (
-          <Stack.Screen name="Walkthrough" component={WalkthroughScreen} options={{ headerShown: false }} />
-        )}
-        {!isLoggedIn ? (
-          <>
-            <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
-          </>
-        ) : (
-          <>
-            <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content" />
+
+      <NavigationContainer>
+
+        <Stack.Navigator initialRouteName={isLoggedIn ? "Main" : "Start"}>
+          {isFirstLaunch && (
+            <Stack.Screen name="Walkthrough" component={WalkthroughScreen} options={{ headerShown: false }} />
+          )}
+          {!isLoggedIn ? (
+            <>
+              <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Start" component={StartScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Login" component={SignInScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="Main" component={BottomTabs} options={{ headerShown: false }} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+    </>
   );
 }
 

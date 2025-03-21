@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Text, Animated } from "react-native";
-import { FAB, Portal, Provider } from "react-native-paper";
+import { View, StyleSheet, TouchableOpacity, Text, Animated, TouchableWithoutFeedback } from "react-native";
+import { FAB } from "react-native-paper";
 import { database, ref, update, get } from '../firebaseConfig';
 import CustomAlert from '../Component/CustomAlert';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,6 +30,18 @@ const FloatingActionButton = ({ userRole, deviceId }) => {
             duration: 200,
             useNativeDriver: true,
         }).start();
+    };
+
+    // Close FAB when pressing outside
+    const handlePressOutside = () => {
+        if (open) {
+            setOpen(false);
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }).start();
+        }
     };
 
     const handleAlarmPress = async () => {
@@ -193,59 +205,60 @@ const FloatingActionButton = ({ userRole, deviceId }) => {
     const actions = userRole === "driver" ? driverActions : ownerActions;
 
     return (
-        <View style={styles.container}>
+        <TouchableWithoutFeedback onPress={handlePressOutside}>
+            <View style={styles.container}>
+                {open && <View style={styles.backdrop} />}
 
-            {open && <View style={styles.backdrop} />}
+                {/* FAB Actions */}
+                <Animated.View
+                    style={[
+                        styles.actionsContainer,
+                        {
+                            opacity: fadeAnim,
+                            transform: [
+                                {
+                                    translateY: fadeAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: [50, 0],
+                                    }),
+                                },
+                            ],
+                        },
+                    ]}
+                >
+                    {actions.map((action, index) => (
+                        <View key={index} style={{ flexDirection: 'row', justifyContent: 'flex-end', width: 300, alignContent: 'center' }}>
+                            <Text style={styles.actionLabel}>{action.label}</Text>
+                            <TouchableOpacity
+                                key={index}
+                                style={[styles.actionButton, { backgroundColor: action.color }]}
+                                onPress={action.onPress}
+                            >
+                                <Ionicons name={action.icon} size={20} color="#FFF" />
+                            </TouchableOpacity>
+                        </View>
+                    ))}
+                </Animated.View>
 
-            {/* FAB Actions */}
-            <Animated.View
-                style={[
-                    styles.actionsContainer,
-                    {
-                        opacity: fadeAnim,
-                        transform: [
-                            {
-                                translateY: fadeAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: [50, 0],
-                                }),
-                            },
-                        ],
-                    },
-                ]}
-            >
-                {actions.map((action, index) => (
-                    <View key={index} style={{ flexDirection: 'row', justifyContent: 'flex-end', width: 300, alignContent: 'center' }}>
-                        <Text style={styles.actionLabel}>{action.label}</Text>
-                        <TouchableOpacity
-                            key={index}
-                            style={[styles.actionButton, { backgroundColor: action.color }]}
-                            onPress={action.onPress}
-                        >
-                            <Ionicons name={action.icon} size={20} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
-                ))}
-            </Animated.View>
+                {/* Main FAB */}
+                <FAB
+                    style={styles.fab}
+                    icon={open ? "lightbulb-on" : "lightbulb-outline"}
+                    onPress={toggleFAB}
+                    color="#FFF"
+                />
 
-            {/* Main FAB */}
-            <FAB
-                style={styles.fab}
-                icon={open ? "lightbulb-on" : "lightbulb-outline"}
-                onPress={toggleFAB}
-                color="#FFF"
-            />
-
-            {/* Custom Alert */}
-            <CustomAlert
-                visible={isAlertVisible}
-                title={alertConfig.title}
-                message={alertConfig.message}
-                onClose={() => setIsAlertVisible(false)}
-                onConfirm={alertConfig.onConfirm}
-                showConfirmButton={alertConfig.showConfirmButton}
-            />
-        </View>
+                {/* Custom Alert */}
+                <CustomAlert
+                    visible={isAlertVisible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    onClose={() => setIsAlertVisible(false)}
+                    onConfirm={alertConfig.onConfirm}
+                    showConfirmButton={alertConfig.showConfirmButton}
+                />
+            </View>
+        </TouchableWithoutFeedback>
     );
 };
 
