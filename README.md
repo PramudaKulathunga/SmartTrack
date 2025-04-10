@@ -20,6 +20,7 @@ SmartTrack is an IoT-based solution tailored for rent-a-car businesses to improv
 ## ⚙️ **Circuit Design**  
 ![WhatsApp Image 2025-03-07 at 5 59 56 AM](https://github.com/user-attachments/assets/b2dd0000-1aa0-40d3-85cd-c9e83a67e3b6)
 ![WhatsApp Image 2025-03-07 at 6 13 08 AM](https://github.com/user-attachments/assets/767052e9-0ecb-4499-a8bd-b3bdf26bdb63)
+![WhatsApp Image 2025-04-11 at 12 11 27 AM](https://github.com/user-attachments/assets/80f08ead-e01a-40f1-932f-56b8da693cc5)
 
 
 The circuit integrates various modules and components to provide seamless monitoring and control. Key design features include:  
