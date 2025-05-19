@@ -67,6 +67,8 @@ The circuit integrates various modules and components to provide seamless monito
 | CHANDRASIRI P.G.P.M.      | 2021/E/108       |  
 | BANDARA H.M.S.A.          | 2021/E/187       |  
 
+![WhatsApp Image 2025-05-19 at 10 05 00 PM](https://github.com/user-attachments/assets/901a1bee-a88e-45f9-acd5-985d588e8c9b)
+
 ---
 
 ## 🌟 **Future Improvements**  
