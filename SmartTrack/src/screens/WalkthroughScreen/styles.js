@@ -30,7 +30,7 @@ const dynamicStyles = (appStyles, colorScheme) => {
     startButton: {
       marginTop: 20,
       paddingVertical: 10,
-      paddingHorizontal: 20,
+      marginHorizontal: 40,
       backgroundColor: "rgb(254, 255, 255)",
       borderRadius: 5,
       alignItems: "center",

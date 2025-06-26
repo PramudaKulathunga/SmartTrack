@@ -183,12 +183,6 @@ const SettingsScreen = ({ navigation }) => {
         );
     };
 
-    // Dummy connected devices data
-    const connectedDevices = [
-        { id: "1", name: "Device 01", lastActive: "2 hours ago" },
-        { id: "2", name: "Device 02", lastActive: "5 days ago" },
-    ];
-
     return (
         <ImageBackground
             source={require('../../assets/BackgroundSettings.png')}
@@ -471,14 +465,14 @@ const styles = StyleSheet.create({
     profileSection: {
         height: 260,
         alignItems: "center",
-        paddingTop: 70,
+        paddingTop: 50,
         padding: 20,
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
     },
     profileImage: {
-        width: 100,
-        height: 100,
+        width: 90,
+        height: 90,
         borderRadius: 50,
         marginBottom: 10,
     },

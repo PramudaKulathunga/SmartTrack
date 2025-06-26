@@ -9,6 +9,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import FloatingActionButton from "../Component/FloatingActionButton";
 import { useNavigation } from "@react-navigation/native";
 
+
 const HomeScreen = ({ setIsMapIconVisible }) => {
 
     // Modal & Input State
@@ -52,7 +53,6 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
     );
 
     const handleNavigateToMap = (deviceId, userRole) => {
-        setIsMapIconVisible(true);
         navigation.navigate('Map', { deviceId, userRole });
     };
 

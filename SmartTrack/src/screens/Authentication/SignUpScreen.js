@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -15,6 +15,23 @@ const SignUpScreen = ({ navigation }) => {
     const [role, setRole] = useState('owner');
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    // Add keyboard event listeners
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
+            setKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+            setKeyboardVisible(false);
+        });
+
+        // Clean up listeners
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
 
     // Function to show custom alert
     const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
@@ -23,8 +40,8 @@ const SignUpScreen = ({ navigation }) => {
             message,
             showConfirmButton,
             onConfirm: onConfirm ? () => {
-                setIsAlertVisible(false); 
-                onConfirm(); 
+                setIsAlertVisible(false);
+                onConfirm();
             } : null,
         });
         setIsAlertVisible(true);
@@ -79,21 +96,23 @@ const SignUpScreen = ({ navigation }) => {
             source={require('../../../assets/Background.png')}
             style={styles.background}
         >
-            <View style={styles.container}>
+            <View style={[styles.container, { paddingBottom: isKeyboardVisible ? 340 : 0 }]}>
                 <View style={styles.titleContainer}>
                     <Text style={styles.title}>CREATE YOUR ACCOUNT</Text>
                 </View>
                 <View style={styles.buttonContainer}>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={role}
-                            onValueChange={(itemValue) => setRole(itemValue)}
-                            style={styles.picker}
-                        >
-                            <Picker.Item label="Owner" value="owner" />
-                            <Picker.Item label="Driver" value="driver" />
-                        </Picker>
-                    </View>
+                    {!isKeyboardVisible &&
+                        <View style={styles.pickerContainer}>
+                            <Picker
+                                selectedValue={role}
+                                onValueChange={(itemValue) => setRole(itemValue)}
+                                style={styles.picker}
+                            >
+                                <Picker.Item label="Owner" value="owner" />
+                                <Picker.Item label="Driver" value="driver" />
+                            </Picker>
+                        </View>
+                    }
                     <TextInput
                         style={styles.input}
                         placeholder="Email"
@@ -152,7 +171,7 @@ const SignUpScreen = ({ navigation }) => {
                         <Text style={styles.buttonText}>{loading ? 'SIGNING UP...' : 'SIGN UP'}</Text>
                     </TouchableOpacity>
                     <Text style={styles.link} onPress={() => navigation.replace('Login')}>
-                        Already have an account? Sign in
+                        Already have an account? <Text style={{ fontWeight: 'bold' }}>Sign in</Text>
                     </Text>
                 </View>
             </View>
@@ -185,11 +204,13 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        marginHorizontal: 30
     },
     title: {
         fontSize: 35,
         color: '#fff',
         fontWeight: 'bold',
+        textAlign: 'center',
     },
     buttonContainer: {
         flex: 2,
@@ -219,6 +240,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgb(15, 164, 220)',
         color: 'rgb(15, 164, 220)',
         fontSize: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
     },
     passwordContainer: {
         flexDirection: 'row',
@@ -251,7 +273,7 @@ const styles = StyleSheet.create({
     },
 
     link: {
-        color: 'blue',
+        color: 'rgb(15, 164, 220)',
         marginTop: 15,
         fontSize: 15,
     },

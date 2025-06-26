@@ -14,43 +14,43 @@ export default function AboutUsScreen() {
             >
 
                 <Image source={require("../../assets/logo_transparent.png")} style={styles.logo} />
-                <Text style={{ textAlign: 'center', marginTop: -35 }}>Version 1.0.0</Text>
+                <Text style={{ textAlign: 'center', marginTop: -35 }}>Version 1.0.1</Text>
 
-                <Text style={[styles.title,{marginBottom:50}]}>Team Members</Text>
-
-                {/* Instructors Section */}
-                <Text style={styles.sectionTitle}>Department of Computer Engineering</Text>
-                <View style={styles.instructorsContainer}>
-                    <View style={styles.instructor}>
-                        <Image source={require("../../assets/TeamMembers/Pramuda.jpeg")} style={styles.instructorImage} />
-                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Pramuda Kulathunga</Text>
-                        <Text style={styles.instructorName}>(App Developer)</Text>
-                    </View>
-                    <View style={styles.instructor}>
-                        <Image source={require("../../assets/TeamMembers/Pasindu.jpeg")} style={styles.instructorImage} />
-                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Pasindu Chandrasiri</Text>
-                        <Text style={styles.instructorName}>(Firmware Developer)</Text>
-                    </View>
-                </View>
-
-                <Text style={[styles.sectionTitle, { marginTop: 40 }]}>Department of Electrical & Electronic Engineering</Text>
-                <View style={styles.instructorsContainer}>
-                    <View style={styles.instructor}>
-                        <Image source={require("../../assets/TeamMembers/Sasindu.jpeg")} style={styles.instructorImage} />
-                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Sasindu Amesh</Text>
-                        <Text style={styles.instructorName}>(Circuit & PCB Designer)</Text>
-                    </View>
-                    <View style={styles.instructor}>
-                        <Image source={require("../../assets/TeamMembers/Dulara.jpeg")} style={styles.instructorImage} />
-                        <Text style={[styles.instructorName,{fontWeight:'700'}]}>Dulara Shrimantha</Text>
-                        <Text style={styles.instructorName}>(Firmware Developer)</Text>
-                    </View>
-                </View>
+                <Text style={[styles.title, { marginBottom: 30 }]}>Team Members</Text>
 
                 {/* About Section */}
                 <Text style={styles.title}>About</Text>
                 <Text style={styles.description}>
-                    SmartTrack is an advanced IoT-based vehicle monitoring and control system designed for rent-a-car service owners. By integrating an ESP32-powered module with GPS tracking, speed monitoring, fire detection, and parking management, SmartTrack enhances vehicle safety and accountability. The system uses an A9G module for real-time GPS and GSM communication, while a DHT11 sensor monitors temperature conditions. Alerts are triggered through buzzers and LEDs, ensuring prompt responses to critical events. With seamless mobile app connectivity via MQTT, owners can efficiently track and manage their fleet anytime, anywhere.            </Text>
+                    SmartTrack is an advanced IoT-based vehicle monitoring and control system designed for rent-a-car service owners. By integrating an ESP32-powered module with GPS tracking, speed monitoring, fire detection, and parking management, SmartTrack enhances vehicle safety and accountability. The system uses an A9G module for real-time GPS and GSM communication, while a DHT11 sensor monitors temperature conditions. Alerts are triggered through buzzers and LEDs, ensuring prompt responses to critical events. With seamless mobile app connectivity via MQTT, owners can efficiently track and manage their fleet anytime, anywhere.
+                </Text>
+
+                {/* Instructors Section */}
+                <Text style={styles.sectionTitle}>Developers</Text>
+                <View style={styles.instructorsContainer}>
+                    <View style={styles.instructor}>
+                        <Image source={require("../../assets/TeamMembers/Pramuda.jpeg")} style={styles.instructorImage} />
+                        <Text style={[styles.instructorName, { fontWeight: '700' }]}>Pramuda Kulathunga</Text>
+                        <Text style={styles.instructorName}>(App Developer)</Text>
+                    </View>
+                    <View style={styles.instructor}>
+                        <Image source={require("../../assets/TeamMembers/Pasindu.jpeg")} style={styles.instructorImage} />
+                        <Text style={[styles.instructorName, { fontWeight: '700' }]}>Pasindu Chandrasiri</Text>
+                        <Text style={styles.instructorName}>(Firmware Developer)</Text>
+                    </View>
+                </View>
+
+                <View style={styles.instructorsContainer}>
+                    <View style={styles.instructor}>
+                        <Image source={require("../../assets/TeamMembers/Sasindu.jpeg")} style={styles.instructorImage} />
+                        <Text style={[styles.instructorName, { fontWeight: '700' }]}>Sasindu Amesh</Text>
+                        <Text style={styles.instructorName}>(Circuit & PCB Designer)</Text>
+                    </View>
+                    <View style={styles.instructor}>
+                        <Image source={require("../../assets/TeamMembers/Dulara.jpeg")} style={styles.instructorImage} />
+                        <Text style={[styles.instructorName, { fontWeight: '700' }]}>Dulara Shrimantha</Text>
+                        <Text style={styles.instructorName}>(Firmware Developer)</Text>
+                    </View>
+                </View>
             </ScrollView>
         </ImageBackground>
     );
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     },
     scrollContainer: {
         padding: 16,
-        paddingBottom: 150
+        paddingBottom: 80
     },
     logo: {
         marginTop: 30,
@@ -76,19 +76,20 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: "bold",
         textAlign: "center",
-        marginVertical: 30,
+        marginVertical: 20,
         marginBottom: 10
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: "bold",
         marginVertical: 10,
+        marginTop: 30,
         textAlign: 'center'
     },
     instructorsContainer: {
         flexDirection: "row",
         justifyContent: "space-around",
-        marginVertical: 10,
+        marginVertical: 30,
     },
     instructor: {
         alignItems: "center"

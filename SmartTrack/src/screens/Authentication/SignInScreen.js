@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Alert, Keyboard } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { database, get, ref } from '../../firebaseConfig';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,6 +12,23 @@ const SignInScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
+    // Add keyboard event listeners
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
+            setKeyboardVisible(true);
+        });
+        const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
+            setKeyboardVisible(false);
+        });
+
+        // Clean up listeners
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
 
     // Function to show custom alert
     const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
@@ -77,8 +94,8 @@ const SignInScreen = ({ navigation }) => {
             source={require('../../../assets/Background.png')}
             style={styles.background}
         >
-            <View style={styles.container}>
-                <View style={styles.titleContainer}>
+            <View style={[styles.container, { paddingBottom: isKeyboardVisible ? 340 : 0 }]}>
+                <View style={[styles.titleContainer, { marginBottom: isKeyboardVisible ? 20 : 50 }]}>
                     <Text style={styles.title}>SIGN IN TO YOUR ACCOUNT</Text>
                 </View>
                 <View style={styles.buttonContainer}>
@@ -119,7 +136,7 @@ const SignInScreen = ({ navigation }) => {
                         <Text style={styles.buttonText}>{loading ? 'LOGGING IN...' : 'LOG IN'}</Text>
                     </TouchableOpacity>
                     <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
-                        Don't have an account? Sign up
+                        Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign up</Text>
                     </Text>
                 </View>
             </View>
@@ -133,7 +150,7 @@ const SignInScreen = ({ navigation }) => {
                 onConfirm={alertConfig.onConfirm}
                 showConfirmButton={alertConfig.showConfirmButton}
             />
-        </ImageBackground >
+        </ImageBackground>
     );
 };
 
@@ -147,22 +164,26 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingTop: 50,
     },
     titleContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        marginHorizontal: 30,
+        maxHeight: 200,
     },
     title: {
         fontSize: 35,
         color: '#fff',
         fontWeight: 'bold',
+        textAlign: 'center',
     },
     buttonContainer: {
         flex: 2,
         justifyContent: 'center',
         alignItems: 'center',
-        width: '75%'
+        width: '75%',
     },
     input: {
         width: '100%',
@@ -174,6 +195,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgb(15, 164, 220)',
         color: 'rgb(15, 164, 220)',
         fontSize: 16,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
     },
     passwordContainer: {
         flexDirection: 'row',
@@ -206,7 +228,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     link: {
-        color: 'blue',
+        color: 'rgb(15, 164, 220)',
         marginTop: 15,
         fontSize: 15,
     },

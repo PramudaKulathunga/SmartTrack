@@ -265,7 +265,7 @@ const FloatingActionButton = ({ userRole, deviceId }) => {
 const styles = StyleSheet.create({
     container: {
         position: "absolute",
-        bottom: 20,
+        bottom: -40,
         right: 20,
         zIndex: 150,
     },
