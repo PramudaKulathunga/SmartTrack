@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { View, LogBox, StyleSheet, StatusBar, TouchableOpacity, Text } from 'react-native';
+import { View, LogBox, StyleSheet, StatusBar, TouchableOpacity, Text, Keyboard, InteractionManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -18,6 +18,7 @@ import StartScreen from './src/screens/Authentication/StartScreen';
 import SignInScreen from './src/screens/Authentication/SignInScreen';
 import SignUpScreen from './src/screens/Authentication/SignUpScreen';
 import SplashScreen from './src/screens/SplashScreen';
+import * as NavigationBar from 'expo-navigation-bar';
 
 // Suppress the specific error message
 LogBox.ignoreLogs([
@@ -162,6 +163,36 @@ export default function App() {
     checkFirstLaunchAndLogin();
   }, []);
 
+  useEffect(() => {
+    const hideNavBar = async () => {
+      await NavigationBar.setVisibilityAsync('hidden');
+      await NavigationBar.setBehaviorAsync('immersive');
+    };
+
+    // Ensure UI is mounted before hiding
+    InteractionManager.runAfterInteractions(hideNavBar);
+  }, []);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      // Show system nav bar when keyboard is open
+      NavigationBar.setVisibilityAsync('visible');
+    });
+
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      // StatusBar.setBackgroundColor('#ffffff');
+
+      // Hide again when keyboard closes
+      NavigationBar.setVisibilityAsync('hidden');
+      NavigationBar.setBehaviorAsync('immersive');
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   // Hide splash screen after animation ends
   const hideSplashScreen = () => {
     setIsSplashVisible(false);
@@ -229,8 +260,8 @@ export default function App() {
 const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: 'row',
-    height: 100,
-    backgroundColor: 'white',
+    height: 80,
+    backgroundColor: 'rgb(224, 247, 255)',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',

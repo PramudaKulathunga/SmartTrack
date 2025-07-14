@@ -320,76 +320,6 @@ export default function MapScreen({ route, navigation }) {
         }}>
 
             <View style={styles.container}>
-                {/* Text Input and Start/Stop Button */}
-                {userRole === 'driver' && (
-                    <View style={styles.inputContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Enter town name"
-                            value={townName}
-                            onChangeText={(text) => {
-                                setTownName(text);
-                                fetchCitySuggestions(text);
-                            }}
-                        />
-                        <TouchableOpacity
-                            style={[styles.startStopButton, isNavigating && styles.disabledButton]}
-                            onPress={handleTownRoute}
-                            disabled={isNavigating}
-                        >
-                            <Text style={styles.startStopButtonText}>
-                                {isTownRouteActive ? 'Stop' : 'Start'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-                {/* Display Suggestions */}
-                {suggestions.length > 0 && (
-                    <View style={styles.suggestionsContainer}>
-                        <FlatList
-                            data={suggestions}
-                            keyExtractor={(item, index) => index.toString()}
-                            renderItem={({ item }) => (
-                                <TouchableOpacity
-                                    style={styles.suggestionItem}
-                                    onPress={() => {
-                                        setTownName(item); // Set the selected suggestion as the town name
-                                        setSuggestions([]); // Clear suggestions
-                                    }}
-                                >
-                                    <Text style={styles.suggestionText}>{item}</Text>
-                                </TouchableOpacity>
-                            )}
-                        />
-                    </View>
-                )}
-
-                <View style={{
-                    flexDirection: 'row', zIndex: 100, justifyContent: 'center',
-                }}>
-                    {/* Floating Focus on Device Button */}
-                    <TouchableOpacity
-                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
-                        onPress={() => {
-                            setIsFocusing((prev) => !prev);
-                        }}
-                    >
-                        <Text style={styles.floatingButtonText}>
-                            {isFocusing ? 'Stop Focusing' : 'Focus on Vehicle'}
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
-                        onPress={handleNavigate}
-                        disabled={isTownRouteActive}
-                    >
-                        <Text style={styles.floatingButtonText}>
-                            {isNavigating ? 'Stop Finding' : 'Find Vehicle'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-
                 <MapView
                     ref={mapRef}
                     style={styles.map}
@@ -460,6 +390,76 @@ export default function MapScreen({ route, navigation }) {
                     )}
                 </MapView>
 
+                {/* Text Input and Start/Stop Button */}
+                {userRole === 'driver' && (
+                    <View style={styles.inputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter town name"
+                            value={townName}
+                            onChangeText={(text) => {
+                                setTownName(text);
+                                fetchCitySuggestions(text);
+                            }}
+                        />
+                        <TouchableOpacity
+                            style={[styles.startStopButton, isNavigating && styles.disabledButton]}
+                            onPress={handleTownRoute}
+                            disabled={isNavigating}
+                        >
+                            <Text style={styles.startStopButtonText}>
+                                {isTownRouteActive ? 'Stop' : 'Start'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+                {/* Display Suggestions */}
+                {suggestions.length > 0 && (
+                    <View style={styles.suggestionsContainer}>
+                        <FlatList
+                            data={suggestions}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.suggestionItem}
+                                    onPress={() => {
+                                        setTownName(item); // Set the selected suggestion as the town name
+                                        setSuggestions([]); // Clear suggestions
+                                    }}
+                                >
+                                    <Text style={styles.suggestionText}>{item}</Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                )}
+
+                <View style={{
+                    flexDirection: 'row', zIndex: 100, justifyContent: 'center',
+                }}>
+                    {/* Floating Focus on Device Button */}
+                    <TouchableOpacity
+                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
+                        onPress={() => {
+                            setIsFocusing((prev) => !prev);
+                        }}
+                    >
+                        <Text style={styles.floatingButtonText}>
+                            {isFocusing ? 'Stop Focusing' : 'Focus on Vehicle'}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
+                        onPress={handleNavigate}
+                        disabled={isTownRouteActive}
+                    >
+                        <Text style={styles.floatingButtonText}>
+                            {isNavigating ? 'Stop Finding' : 'Find Vehicle'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+
                 {/* Floating rote */}
                 {userRole === 'owner' && (
                     <View style={styles.fabContainer}>
@@ -484,14 +484,16 @@ export default function MapScreen({ route, navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        position: 'relative',
     },
     inputContainer: {
+        position: 'absolute',
+        top: 50,
+        left: 20,
+        right: 20,
+        zIndex: 100,
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 20,
-        zIndex: 100,
-        marginTop: 50,
-        marginHorizontal: 20
     },
     input: {
         flex: 1,
@@ -524,10 +526,8 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     map: {
-        width: '100%',
-        height: '98%',
-        marginTop: -150,
-        zIndex: 1
+        ...StyleSheet.absoluteFillObject, // This makes the map fill the entire container
+        zIndex: 0
     },
     floatingButton: {
         alignSelf: 'center',

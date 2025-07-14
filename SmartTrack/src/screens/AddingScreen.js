@@ -125,12 +125,14 @@ export default function AddingScreen({ navigation }) {
                     <TextInput
                         style={styles.input}
                         placeholder="Device Name"
+                        placeholderTextColor="rgba(15, 164, 220, 0.7)"
                         value={newDeviceName}
                         onChangeText={setNewDeviceName}
                     />
                     <TextInput
                         style={styles.input}
                         placeholder="Device ID"
+                        placeholderTextColor="rgba(15, 164, 220, 0.7)"
                         value={newDeviceId}
                         onChangeText={setNewDeviceId}
                     />

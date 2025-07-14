@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { database, get, ref, set } from '../../firebaseConfig';
@@ -96,85 +96,98 @@ const SignUpScreen = ({ navigation }) => {
             source={require('../../../assets/Background.png')}
             style={styles.background}
         >
-            <View style={[styles.container, { paddingBottom: isKeyboardVisible ? 340 : 0 }]}>
-                <View style={styles.titleContainer}>
-                    <Text style={styles.title}>CREATE YOUR ACCOUNT</Text>
-                </View>
-                <View style={styles.buttonContainer}>
-                    {!isKeyboardVisible &&
-                        <View style={styles.pickerContainer}>
-                            <Picker
-                                selectedValue={role}
-                                onValueChange={(itemValue) => setRole(itemValue)}
-                                style={styles.picker}
-                            >
-                                <Picker.Item label="Owner" value="owner" />
-                                <Picker.Item label="Driver" value="driver" />
-                            </Picker>
-                        </View>
-                    }
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                    />
-                    <View style={styles.passwordContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password"
-                            secureTextEntry={!showPassword}
-                            value={password}
-                            onChangeText={setPassword}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowPassword(!showPassword)}
-                            style={styles.iconButton}
-                        >
-                            <Ionicons
-                                name={showPassword ? 'eye-off' : 'eye'}
-                                size={23}
-                                color="rgb(15, 164, 220)"
-                                style={{ marginBottom: 5 }}
-                            />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={[styles.passwordContainer, { marginBottom: 10 }]}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Confirm Password"
-                            secureTextEntry={!showConfirmPassword}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                            style={styles.iconButton}
-                        >
-                            <Ionicons
-                                name={showConfirmPassword ? 'eye-off' : 'eye'}
-                                size={23}
-                                color="rgb(15, 164, 220)"
-                                style={{ marginBottom: 5 }}
-                            />
-                        </TouchableOpacity>
-                    </View>
-
-                    <TouchableOpacity
-                        style={[styles.customButton, (loading || !email || !password || !confirmPassword) && { opacity: 0.7 }]}
-                        onPress={handleSignUp}
-                        disabled={loading || !email || !password || !confirmPassword}
-                    >
-                        <Text style={styles.buttonText}>{loading ? 'SIGNING UP...' : 'SIGN UP'}</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.link} onPress={() => navigation.replace('Login')}>
-                        Already have an account? <Text style={{ fontWeight: 'bold' }}>Sign in</Text>
-                    </Text>
-                </View>
+            <View style={styles.titleWrapper}>
+                <Text style={styles.title}>CREATE YOUR ACCOUNT</Text>
             </View>
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContainer}
+                    keyboardShouldPersistTaps="handled"
+                >
+
+                    <View style={styles.container}>
+                        <View style={styles.buttonContainer}>
+                            <View style={styles.pickerContainer}>
+                                <Picker
+                                    selectedValue={role}
+                                    onValueChange={(itemValue) => setRole(itemValue)}
+                                    style={styles.picker}
+                                >
+                                    <Picker.Item label="Owner" value="owner" />
+                                    <Picker.Item label="Driver" value="driver" />
+                                </Picker>
+                            </View>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Email"
+                                placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                value={email}
+                                onChangeText={setEmail}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                            />
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Password"
+                                    placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                    secureTextEntry={!showPassword}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    style={styles.iconButton}
+                                >
+                                    <Ionicons
+                                        name={showPassword ? 'eye-off' : 'eye'}
+                                        size={23}
+                                        color="rgb(15, 164, 220)"
+                                        style={{ marginBottom: 5 }}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={[styles.passwordContainer, { marginBottom: 10 }]}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Confirm Password"
+                                    placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                    secureTextEntry={!showConfirmPassword}
+                                    value={confirmPassword}
+                                    onChangeText={setConfirmPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    style={styles.iconButton}
+                                >
+                                    <Ionicons
+                                        name={showConfirmPassword ? 'eye-off' : 'eye'}
+                                        size={23}
+                                        color="rgb(15, 164, 220)"
+                                        style={{ marginBottom: 5 }}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+
+                            <TouchableOpacity
+                                style={[styles.customButton, (loading || !email || !password || !confirmPassword) && { opacity: 0.7 }]}
+                                onPress={handleSignUp}
+                                disabled={loading || !email || !password || !confirmPassword}
+                            >
+                                <Text style={styles.buttonText}>{loading ? 'SIGNING UP...' : 'SIGN UP'}</Text>
+                            </TouchableOpacity>
+                            <Text style={styles.link} onPress={() => navigation.replace('Login')}>
+                                Already have an account? <Text style={{ fontWeight: 'bold' }}>Sign in</Text>
+                            </Text>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Custom Alert */}
             <CustomAlert
@@ -193,18 +206,22 @@ const styles = StyleSheet.create({
     background: {
         flex: 1,
         resizeMode: 'cover',
-        justifyContent: 'center',
+    },
+    scrollContainer: {
+        flexGrow: 1,
     },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingTop: 50,
+        paddingBottom: 50,
     },
-    titleContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    titleWrapper: {
+        paddingTop: 100,
+        paddingBottom: 20,
         alignItems: 'center',
-        marginHorizontal: 30
+        justifyContent: 'center',
     },
     title: {
         fontSize: 35,
@@ -229,6 +246,7 @@ const styles = StyleSheet.create({
     picker: {
         width: '100%',
         color: 'rgb(15, 164, 220)',
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
     },
     input: {
         width: '100%',

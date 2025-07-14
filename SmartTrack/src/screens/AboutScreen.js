@@ -14,7 +14,7 @@ export default function AboutUsScreen() {
             >
 
                 <Image source={require("../../assets/logo_transparent.png")} style={styles.logo} />
-                <Text style={{ textAlign: 'center', marginTop: -35 }}>Version 1.0.1</Text>
+                <Text style={{ textAlign: 'center', marginTop: -35 }}>Version 1.0.2</Text>
 
                 <Text style={[styles.title, { marginBottom: 30 }]}>Team Members</Text>
 

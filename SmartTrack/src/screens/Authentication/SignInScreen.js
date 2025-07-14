@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ImageBackground, Keyboard, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { database, get, ref } from '../../firebaseConfig';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,23 +12,6 @@ const SignInScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(false);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
-    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-
-    // Add keyboard event listeners
-    useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener("keyboardDidShow", () => {
-            setKeyboardVisible(true);
-        });
-        const keyboardDidHideListener = Keyboard.addListener("keyboardDidHide", () => {
-            setKeyboardVisible(false);
-        });
-
-        // Clean up listeners
-        return () => {
-            keyboardDidShowListener.remove();
-            keyboardDidHideListener.remove();
-        };
-    }, []);
 
     // Function to show custom alert
     const showAlert = (title, message, showConfirmButton = false, onConfirm) => {
@@ -94,52 +77,69 @@ const SignInScreen = ({ navigation }) => {
             source={require('../../../assets/Background.png')}
             style={styles.background}
         >
-            <View style={[styles.container, { paddingBottom: isKeyboardVisible ? 340 : 0 }]}>
-                <View style={[styles.titleContainer, { marginBottom: isKeyboardVisible ? 20 : 50 }]}>
-                    <Text style={styles.title}>SIGN IN TO YOUR ACCOUNT</Text>
-                </View>
-                <View style={styles.buttonContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                    />
-                    <View style={styles.passwordContainer}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Password"
-                            secureTextEntry={!showPassword}
-                            value={password}
-                            onChangeText={setPassword}
-                        />
-                        <TouchableOpacity
-                            onPress={() => setShowPassword(!showPassword)}
-                            style={styles.iconButton}
-                        >
-                            <Ionicons
-                                name={showPassword ? 'eye-off' : 'eye'}
-                                size={23}
-                                color="rgb(15, 164, 220)"
-                                style={{ marginBottom: 5 }}
-                            />
-                        </TouchableOpacity>
-                    </View>
-
-                    <TouchableOpacity
-                        style={[styles.customButton, (loading || !email || !password) && { opacity: 0.7 }]}
-                        onPress={handleLogin}
-                        disabled={loading || !email || !password}
-                    >
-                        <Text style={styles.buttonText}>{loading ? 'LOGGING IN...' : 'LOG IN'}</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
-                        Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign up</Text>
-                    </Text>
-                </View>
+            <View style={styles.titleWrapper}>
+                <Text style={styles.title}>SIGN IN TO YOUR ACCOUNT</Text>
             </View>
+
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContainer}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <View style={styles.container}>
+                        <View style={styles.buttonContainer}>
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Email"
+                                    placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                />
+                            </View>
+                            <View style={styles.passwordContainer}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Password"
+                                    placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                    secureTextEntry={!showPassword}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                />
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    style={styles.iconButton}
+                                >
+                                    <Ionicons
+                                        name={showPassword ? 'eye-off' : 'eye'}
+                                        size={23}
+                                        color="rgb(15, 164, 220)"
+                                        style={{ marginBottom: 5 }}
+                                    />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.passwordContainer}>
+                                <TouchableOpacity
+                                    style={[styles.customButton, (loading || !email || !password) && { opacity: 0.7 }]}
+                                    onPress={handleLogin}
+                                    disabled={loading || !email || !password}
+                                >
+                                    <Text style={styles.buttonText}>{loading ? 'LOGGING IN...' : 'LOG IN'}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
+                                Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign up</Text>
+                            </Text>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
             {/* Custom Alert */}
             <CustomAlert
@@ -158,20 +158,22 @@ const styles = StyleSheet.create({
     background: {
         flex: 1,
         resizeMode: 'cover',
-        justifyContent: 'center',
+    },
+    scrollContainer: {
+        flexGrow: 1,
     },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingTop: 50,
+        paddingBottom: 50,
     },
-    titleContainer: {
-        flex: 1,
-        justifyContent: 'center',
+    titleWrapper: {
+        paddingTop: 100,
+        paddingBottom: 20,
         alignItems: 'center',
-        marginHorizontal: 30,
-        maxHeight: 200,
+        justifyContent: 'center',
     },
     title: {
         fontSize: 35,
@@ -201,7 +203,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         width: '100%',
-        marginBottom: 10,
     },
     iconButton: {
         position: 'absolute',
