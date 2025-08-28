@@ -2,6 +2,7 @@ import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
 import { View, LogBox, StyleSheet, StatusBar, TouchableOpacity, Text, Keyboard, InteractionManager } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { AppState } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,6 +25,7 @@ import * as NavigationBar from 'expo-navigation-bar';
 LogBox.ignoreLogs([
   'Expected static flag was missing. Please notify the React team',
   "The action 'NAVIGATE' with payload",
+  'setBehaviorAsync',
 ]);
 
 // Create Navigators
@@ -140,6 +142,54 @@ export default function App() {
   const [isSplashVisible, setIsSplashVisible] = useState(true);
 
   useEffect(() => {
+    const hideNavBar = async () => {
+      try {
+        await NavigationBar.setBehaviorAsync('immersive-sticky');
+        await NavigationBar.setVisibilityAsync('hidden');
+      } catch (err) {
+        console.warn('NavigationBar error:', err);
+      }
+    };
+
+    hideNavBar();
+
+    const appStateListener = AppState.addEventListener
+      ? AppState.addEventListener('change', (state) => {
+        if (state === 'active') hideNavBar();
+      })
+      : AppState.addEventListener && AppState.addEventListener('change', hideNavBar); // fallback
+
+    return () => {
+      if (appStateListener && typeof appStateListener.remove === 'function') {
+        appStateListener.remove();
+      } else {
+        // for older versions
+        AppState.removeEventListener?.('change', hideNavBar);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+      // Show system nav bar when keyboard is open
+      NavigationBar.setVisibilityAsync('visible');
+    });
+
+    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+      // StatusBar.setBackgroundColor('#ffffff');
+
+      // Hide again when keyboard closes
+      NavigationBar.setVisibilityAsync('hidden');
+      NavigationBar.setBehaviorAsync('immersive');
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
     const checkFirstLaunchAndLogin = async () => {
       try {
         // Check if it's the first launch
@@ -161,36 +211,6 @@ export default function App() {
     };
 
     checkFirstLaunchAndLogin();
-  }, []);
-
-  useEffect(() => {
-    const hideNavBar = async () => {
-      await NavigationBar.setVisibilityAsync('hidden');
-      await NavigationBar.setBehaviorAsync('immersive');
-    };
-
-    // Ensure UI is mounted before hiding
-    InteractionManager.runAfterInteractions(hideNavBar);
-  }, []);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
-      // Show system nav bar when keyboard is open
-      NavigationBar.setVisibilityAsync('visible');
-    });
-
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
-      // StatusBar.setBackgroundColor('#ffffff');
-
-      // Hide again when keyboard closes
-      NavigationBar.setVisibilityAsync('hidden');
-      NavigationBar.setBehaviorAsync('immersive');
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
   }, []);
 
   // Hide splash screen after animation ends

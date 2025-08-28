@@ -1,7 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const WelcomeScreen = ({ navigation }) => {
+    // Check if user is already logged in with valid session
+    useEffect(() => {
+        const checkUserSession = async () => {
+            try {
+                const userDataString = await AsyncStorage.getItem('userData');
+                if (userDataString) {
+                    const userData = JSON.parse(userDataString);
+                    const loginDate = new Date(userData.loginDate);
+                    const currentDate = new Date();
+                    const hoursDiff = Math.abs(currentDate - loginDate) / 36e5; // hours difference
+
+                    // If less than 24 hours have passed, navigate to main screen
+                    if (hoursDiff < 24) {
+                        navigation.replace('Main');
+                    } else {
+                        // Session expired, remove user data
+                        await AsyncStorage.removeItem('userData');
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking user session:', error);
+            }
+        };
+
+        checkUserSession();
+    }, [navigation]);
+
     return (
         <ImageBackground
             source={require('../../../assets/Background.png')}

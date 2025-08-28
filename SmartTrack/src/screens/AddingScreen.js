@@ -91,6 +91,7 @@ export default function AddingScreen({ navigation }) {
                 id: (userData.devices?.length || 0) + 1,
                 name: newDeviceName,
                 deviceId: newDeviceId,
+                status: "Not Hired"
             };
 
             const updatedDevices = userData.devices ? [...userData.devices, newDevice] : [newDevice];
@@ -112,62 +113,93 @@ export default function AddingScreen({ navigation }) {
     };
 
     return (
-        <ImageBackground
-            source={require('../../assets/Background.png')}
-            style={styles.background}
-        >
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                style={styles.container}
+        <View style={styles.backgroundContainer}>
+            <ImageBackground
+                source={require('../../assets/Background.png')}
+                style={styles.backgroundImage}
+                resizeMode="cover"
             >
-                <View style={styles.modalContent}>
-                    <Text style={[styles.modalTitle, { marginBottom: isKeyboardVisible ? 120 : 230 }, { marginTop: isKeyboardVisible ? 50 : 100 },]}>Add New Device</Text>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Device Name"
-                        placeholderTextColor="rgba(15, 164, 220, 0.7)"
-                        value={newDeviceName}
-                        onChangeText={setNewDeviceName}
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Device ID"
-                        placeholderTextColor="rgba(15, 164, 220, 0.7)"
-                        value={newDeviceId}
-                        onChangeText={setNewDeviceId}
-                    />
-                    <View style={styles.modalButtons}>
-                        <TouchableOpacity style={styles.submitButton} onPress={handleAddDevice}>
-                            <Text style={styles.buttonText}>Add</Text>
-                        </TouchableOpacity>
-                    </View>
+                <View style={styles.titleWrapper}>
+                    <Text style={styles.title}>Add New Device</Text>
                 </View>
 
-                {/* Custom Alert */}
-                <CustomAlert
-                    visible={isAlertVisible}
-                    title={alertConfig.title}
-                    message={alertConfig.message}
-                    onClose={() => setIsAlertVisible(false)}
-                    onConfirm={alertConfig.onConfirm}
-                    showConfirmButton={alertConfig.showConfirmButton}
-                />
-            </KeyboardAvoidingView>
-        </ImageBackground>
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+                    style={styles.container}
+                >
+                    <View style={styles.modalContent}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Device Name"
+                            placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                            value={newDeviceName}
+                            onChangeText={setNewDeviceName}
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Device ID"
+                            placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                            value={newDeviceId}
+                            onChangeText={setNewDeviceId}
+                        />
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity style={styles.submitButton} onPress={handleAddDevice}>
+                                <Text style={styles.buttonText}>Add</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {/* Custom Alert */}
+                    <CustomAlert
+                        visible={isAlertVisible}
+                        title={alertConfig.title}
+                        message={alertConfig.message}
+                        onClose={() => setIsAlertVisible(false)}
+                        onConfirm={alertConfig.onConfirm}
+                        showConfirmButton={alertConfig.showConfirmButton}
+                    />
+                </KeyboardAvoidingView>
+            </ImageBackground>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    background: {
+    backgroundContainer: {
         flex: 1,
-        resizeMode: 'cover',
+        position: 'relative',
+    },
+    backgroundImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: -1,
     },
     container: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 50,
+        paddingBottom: 50,
+    },
+    titleWrapper: {
+        paddingTop: 100,
+        paddingBottom: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    title: {
+        fontSize: 35,
+        color: '#fff',
+        fontWeight: 'bold',
+        textAlign: 'center',
     },
     scrollContainer: {
         flexGrow: 1,
-        paddingHorizontal: 20,
     },
     modalContainer: {
         flex: 1,
@@ -181,11 +213,6 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 10,
         alignItems: "center",
-    },
-    modalTitle: {
-        fontSize: 30,
-        color: '#fff',
-        fontWeight: 'bold',
     },
     input: {
         width: "100%",

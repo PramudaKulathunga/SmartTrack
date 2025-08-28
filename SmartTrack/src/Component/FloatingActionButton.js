@@ -206,7 +206,7 @@ const FloatingActionButton = ({ userRole, deviceId }) => {
 
     return (
         <TouchableWithoutFeedback onPress={handlePressOutside}>
-            <View style={styles.container}>
+            <View style={[styles.container, { zIndex: open ? 150 : 50 }]}>
                 {open && <View style={styles.backdrop} />}
 
                 {/* FAB Actions */}
@@ -267,7 +267,6 @@ const styles = StyleSheet.create({
         position: "absolute",
         bottom: -40,
         right: 20,
-        zIndex: 150,
     },
     fab: {
         backgroundColor: "rgb(15, 164, 220)",

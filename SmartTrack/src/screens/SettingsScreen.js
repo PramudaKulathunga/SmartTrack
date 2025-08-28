@@ -298,12 +298,18 @@ const SettingsScreen = ({ navigation }) => {
                     {/* Connected Devices (Visible when Devices is expanded) */}
                     {expandedSection === "devices" && (
                         <View style={styles.userDetailsContainer}>
-                            {devices.map((device) => (
-                                <View key={device.id} style={styles.detailRow}>
-                                    <Text style={styles.detailLabel}>{device.name}</Text>
-                                    <Text style={styles.detailValue}>{device.deviceId}</Text>
-                                </View>
-                            ))}
+                            {devices.length === 0 ?
+                                (
+                                    <Text style={styles.detailLabel}>No Devices added yet</Text>
+                                ) : (
+                                    devices.map((device) => (
+                                        <View key={device.id} style={styles.detailRow}>
+                                            <Text style={styles.detailLabel}>{device.name}</Text>
+                                            <Text style={styles.detailValue}>{device.deviceId}</Text>
+                                        </View>
+                                    ))
+                                )
+                            }
                         </View>
                     )}
                 </View>

@@ -73,91 +73,104 @@ const SignInScreen = ({ navigation }) => {
     };
 
     return (
-        <ImageBackground
-            source={require('../../../assets/Background.png')}
-            style={styles.background}
-        >
-            <View style={styles.titleWrapper}>
-                <Text style={styles.title}>SIGN IN TO YOUR ACCOUNT</Text>
-            </View>
-
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={{ flex: 1 }}
+        <View style={styles.backgroundContainer}>
+            <ImageBackground
+                source={require('../../../assets/Background.png')}
+                style={styles.backgroundImage}
+                resizeMode="cover"
             >
-                <ScrollView
-                    contentContainerStyle={styles.scrollContainer}
-                    keyboardShouldPersistTaps="handled"
+                <View style={styles.titleWrapper}>
+                    <Text style={styles.title}>SIGN IN TO YOUR ACCOUNT</Text>
+                </View>
+
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
                 >
-                    <View style={styles.container}>
-                        <View style={styles.buttonContainer}>
-                            <View style={styles.passwordContainer}>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Email"
-                                    placeholderTextColor="rgba(15, 164, 220, 0.7)"
-                                    value={email}
-                                    onChangeText={setEmail}
-                                    autoCapitalize="none"
-                                    keyboardType="email-address"
-                                />
-                            </View>
-                            <View style={styles.passwordContainer}>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Password"
-                                    placeholderTextColor="rgba(15, 164, 220, 0.7)"
-                                    secureTextEntry={!showPassword}
-                                    value={password}
-                                    onChangeText={setPassword}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setShowPassword(!showPassword)}
-                                    style={styles.iconButton}
-                                >
-                                    <Ionicons
-                                        name={showPassword ? 'eye-off' : 'eye'}
-                                        size={23}
-                                        color="rgb(15, 164, 220)"
-                                        style={{ marginBottom: 5 }}
+                    <ScrollView
+                        contentContainerStyle={styles.scrollContainer}
+                        keyboardShouldPersistTaps="handled"
+                    >
+                        <View style={styles.container}>
+                            <View style={styles.buttonContainer}>
+                                <View style={styles.passwordContainer}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Email"
+                                        placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                        value={email}
+                                        onChangeText={setEmail}
+                                        autoCapitalize="none"
+                                        keyboardType="email-address"
                                     />
-                                </TouchableOpacity>
-                            </View>
+                                </View>
+                                <View style={styles.passwordContainer}>
+                                    <TextInput
+                                        style={styles.input}
+                                        placeholder="Password"
+                                        placeholderTextColor="rgba(15, 164, 220, 0.7)"
+                                        secureTextEntry={!showPassword}
+                                        value={password}
+                                        onChangeText={setPassword}
+                                    />
+                                    <TouchableOpacity
+                                        onPress={() => setShowPassword(!showPassword)}
+                                        style={styles.iconButton}
+                                    >
+                                        <Ionicons
+                                            name={showPassword ? 'eye-off' : 'eye'}
+                                            size={23}
+                                            color="rgb(15, 164, 220)"
+                                            style={{ marginBottom: 5 }}
+                                        />
+                                    </TouchableOpacity>
+                                </View>
 
-                            <View style={styles.passwordContainer}>
-                                <TouchableOpacity
-                                    style={[styles.customButton, (loading || !email || !password) && { opacity: 0.7 }]}
-                                    onPress={handleLogin}
-                                    disabled={loading || !email || !password}
-                                >
-                                    <Text style={styles.buttonText}>{loading ? 'LOGGING IN...' : 'LOG IN'}</Text>
-                                </TouchableOpacity>
+                                <View style={styles.passwordContainer}>
+                                    <TouchableOpacity
+                                        style={[styles.customButton, (loading || !email || !password) && { opacity: 0.7 }]}
+                                        onPress={handleLogin}
+                                        disabled={loading || !email || !password}
+                                    >
+                                        <Text style={styles.buttonText}>{loading ? 'LOGGING IN...' : 'LOG IN'}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
+                                    Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign up</Text>
+                                </Text>
                             </View>
-                            <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
-                                Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign up</Text>
-                            </Text>
                         </View>
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                    </ScrollView>
+                </KeyboardAvoidingView>
 
-            {/* Custom Alert */}
-            <CustomAlert
-                visible={isAlertVisible}
-                title={alertConfig.title}
-                message={alertConfig.message}
-                onClose={() => setIsAlertVisible(false)}
-                onConfirm={alertConfig.onConfirm}
-                showConfirmButton={alertConfig.showConfirmButton}
-            />
-        </ImageBackground>
+                {/* Custom Alert */}
+                <CustomAlert
+                    visible={isAlertVisible}
+                    title={alertConfig.title}
+                    message={alertConfig.message}
+                    onClose={() => setIsAlertVisible(false)}
+                    onConfirm={alertConfig.onConfirm}
+                    showConfirmButton={alertConfig.showConfirmButton}
+                />
+            </ImageBackground>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    background: {
+    backgroundContainer: {
         flex: 1,
-        resizeMode: 'cover',
+        position: 'relative',
+    },
+    backgroundImage: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: -1,
     },
     scrollContainer: {
         flexGrow: 1,
