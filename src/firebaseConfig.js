@@ -1,16 +1,26 @@
 // firebaseConfig.js
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, get, onValue, update, off, push } from 'firebase/database';
+import {
+    firebase_apiKey,
+    firebase_authDomain,
+    firebase_databaseURL,
+    firebase_projectId,
+    firebase_storageBucket,
+    firebase_messagingSenderId,
+    firebase_appId,
+    firebase_measurementId
+} from "@env";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyB0IZiY_0meRNkcWsU-SFX5it8ZouhnBRk",
-    authDomain: "smarttrack-e053b.firebaseapp.com",
-    databaseURL: "https://smarttrack-e053b-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "smarttrack-e053b",
-    storageBucket: "smarttrack-e053b.firebasestorage.app",
-    messagingSenderId: "669073050721",
-    appId: "1:669073050721:web:61b64e6a84eca200d56e20",
-    measurementId: "G-WQP4TL0JCQ"
+    apiKey: firebase_apiKey,
+    authDomain: firebase_authDomain,
+    databaseURL: firebase_databaseURL,
+    projectId: firebase_projectId,
+    storageBucket: firebase_storageBucket,
+    messagingSenderId: firebase_messagingSenderId,
+    appId: firebase_appId,
+    measurementId: firebase_measurementId
 };
 
 const app = initializeApp(firebaseConfig);
