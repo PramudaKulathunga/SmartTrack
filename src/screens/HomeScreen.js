@@ -479,9 +479,33 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
     };
 
     const clearDriverNotification = async (notificationId) => {
-        const emailKey = userData.email.replace(/\./g, ',');
-        const notificationRef = ref(database, `driverNotifications/${emailKey}/${notificationId}`);
-        await remove(notificationRef);
+        try {
+            const emailKey = userData.email.replace(/\./g, ',');
+            const notificationRef = ref(database, `driverNotifications/${emailKey}/${notificationId}`);
+
+            await remove(notificationRef);
+            setDriverNotifications(prev => prev.filter(notification => notification.id !== notificationId));
+
+        } catch (error) {
+            console.error("Error clearing notification:", error);
+            showAlert("Error", "Failed to clear notification. Please try again.");
+        }
+    };
+
+    const clearAllDriverNotifications = async () => {
+        try {
+            const emailKey = userData.email.replace(/\./g, ',');
+            const notificationsRef = ref(database, `driverNotifications/${emailKey}`);
+
+            await remove(notificationsRef);
+
+            setDriverNotifications([]);
+
+            showAlert("Success", "All notifications cleared.");
+        } catch (error) {
+            console.error("Error clearing all notifications:", error);
+            showAlert("Error", "Failed to clear notifications. Please try again.");
+        }
     };
 
     return (
@@ -605,12 +629,14 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
                                 style={styles.input}
                                 placeholder="Device Name"
                                 value={newDeviceName}
+                                placeholderTextColor="rgba(15, 164, 220, 0.7)"
                                 onChangeText={setNewDeviceName}
                             />
                             <TextInput
                                 style={styles.input}
                                 placeholder="Device ID"
                                 value={newDeviceId}
+                                placeholderTextColor="rgba(15, 164, 220, 0.7)"
                                 onChangeText={setNewDeviceId}
                             />
                             <Text style={styles.helpText}>
@@ -672,6 +698,14 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
                                     )}
                                 />
                             )}
+                            {driverNotifications.length > 0 && (
+                                <TouchableOpacity
+                                    style={[styles.closeButton, { backgroundColor: 'red' }]}
+                                    onPress={clearAllDriverNotifications}
+                                >
+                                    <Text style={styles.buttonText}>Clear All</Text>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity
                                 style={styles.closeButton}
                                 onPress={() => setNotificationModalVisible(false)}
@@ -696,6 +730,9 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
                                     renderItem={({ item }) => (
                                         <View style={styles.notificationItem}>
                                             <Text style={styles.notificationText}>{item.message}</Text>
+                                            <Text style={styles.notificationTime}>
+                                                {new Date(item.timestamp).toLocaleString()}
+                                            </Text>
                                             <TouchableOpacity
                                                 style={[styles.closeButtonNotification]}
                                                 onPress={() => clearDriverNotification(item.id)}
@@ -705,6 +742,14 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
                                         </View>
                                     )}
                                 />
+                            )}
+                            {driverNotifications.length > 0 && (
+                                <TouchableOpacity
+                                    style={[styles.closeButton, { backgroundColor: 'red' }]}
+                                    onPress={clearAllDriverNotifications}
+                                >
+                                    <Text style={styles.buttonText}>Clear All</Text>
+                                </TouchableOpacity>
                             )}
                             <TouchableOpacity
                                 style={styles.closeButton}
@@ -875,6 +920,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         backgroundColor: "rgba(0, 0, 0, 0.5)",
+        height: '100vh'
     },
     modalContent: {
         width: "80%",
@@ -959,6 +1005,12 @@ const styles = StyleSheet.create({
     notificationText: {
         fontSize: 14,
         marginBottom: 10,
+    },
+    notificationTime: {
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 10,
+        fontStyle: 'italic',
     },
     boldText: {
         fontWeight: 'bold',

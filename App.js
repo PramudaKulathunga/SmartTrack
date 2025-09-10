@@ -1,12 +1,13 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { View, LogBox, StyleSheet, StatusBar, TouchableOpacity, Text, Keyboard, InteractionManager } from 'react-native';
+import { View, LogBox, StyleSheet, StatusBar, TouchableOpacity, Text, Keyboard, InteractionManager, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { AppState } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons, Feather } from '@expo/vector-icons';
+import * as NavigationBar from 'expo-navigation-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import Screens
 import WalkthroughScreen from './src/screens/WalkthroughScreen/WalkthroughScreen';
@@ -19,7 +20,6 @@ import StartScreen from './src/screens/Authentication/StartScreen';
 import SignInScreen from './src/screens/Authentication/SignInScreen';
 import SignUpScreen from './src/screens/Authentication/SignUpScreen';
 import SplashScreen from './src/screens/SplashScreen';
-import * as NavigationBar from 'expo-navigation-bar';
 
 // Suppress the specific error message
 LogBox.ignoreLogs([
@@ -34,11 +34,22 @@ const Tab = createBottomTabNavigator();
 
 // Custom Tab Bar Component
 const CustomTabBar = ({ state, descriptors, navigation }) => {
-  // Filter out the Map screen from the tab bar
+  const insets = useSafeAreaInsets();
+  const [navBarHeight, setNavBarHeight] = useState(0);
+  const totalHeight = 80 + navBarHeight;
+
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      setNavBarHeight(insets.bottom - 15);
+    } else {
+      setNavBarHeight(0);
+    }
+  }, [insets.bottom]);
+
   const filteredRoutes = state.routes.filter(route => route.name !== 'Map');
 
   return (
-    <View style={styles.tabBarContainer}>
+    <View style={[styles.tabBarContainer, { paddingBottom: navBarHeight, height: totalHeight }]}>
       {filteredRoutes.map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
@@ -141,53 +152,22 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSplashVisible, setIsSplashVisible] = useState(true);
 
+  // Show navigation bar for all screens except splash
   useEffect(() => {
-    const hideNavBar = async () => {
-      try {
-        await NavigationBar.setBehaviorAsync('immersive-sticky');
-        await NavigationBar.setVisibilityAsync('hidden');
-      } catch (err) {
-        console.warn('NavigationBar error:', err);
+    const showNavigationBar = async (color) => {
+      if (!isSplashVisible) {
+        try {
+          await NavigationBar.setVisibilityAsync('visible');
+          await NavigationBar.setBehaviorAsync('overlay-swipe');
+          await NavigationBar.setBorderColorAsync(color);
+        } catch (error) {
+          console.warn('NavigationBar error:', error);
+        }
       }
     };
 
-    hideNavBar();
-
-    const appStateListener = AppState.addEventListener
-      ? AppState.addEventListener('change', (state) => {
-        if (state === 'active') hideNavBar();
-      })
-      : AppState.addEventListener && AppState.addEventListener('change', hideNavBar); // fallback
-
-    return () => {
-      if (appStateListener && typeof appStateListener.remove === 'function') {
-        appStateListener.remove();
-      } else {
-        // for older versions
-        AppState.removeEventListener?.('change', hideNavBar);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
-      // Show system nav bar when keyboard is open
-      NavigationBar.setVisibilityAsync('visible');
-    });
-
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
-      // StatusBar.setBackgroundColor('#ffffff');
-
-      // Hide again when keyboard closes
-      NavigationBar.setVisibilityAsync('hidden');
-      NavigationBar.setBehaviorAsync('immersive');
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
+    showNavigationBar('rgb(224, 247, 255)');
+  }, [isSplashVisible]);
 
   useEffect(() => {
     const checkFirstLaunchAndLogin = async () => {
@@ -280,15 +260,9 @@ export default function App() {
 const styles = StyleSheet.create({
   tabBarContainer: {
     flexDirection: 'row',
-    height: 80,
     backgroundColor: 'rgb(224, 247, 255)',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingHorizontal: 10

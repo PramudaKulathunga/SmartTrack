@@ -435,11 +435,16 @@ export default function MapScreen({ route, navigation }) {
                 )}
 
                 <View style={{
-                    flexDirection: 'row', zIndex: 100, justifyContent: 'center',
+                    flexDirection: 'row',
+                    zIndex: 300,
+                    justifyContent: 'center',
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
                 }}>
                     {/* Floating Focus on Device Button */}
                     <TouchableOpacity
-                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
+                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 105 : 10 }]}
                         onPress={() => {
                             setIsFocusing((prev) => !prev);
                         }}
@@ -450,7 +455,7 @@ export default function MapScreen({ route, navigation }) {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 10 : 50 }]}
+                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 105 : 10 }]}
                         onPress={handleNavigate}
                         disabled={isTownRouteActive}
                     >
@@ -491,7 +496,7 @@ const styles = StyleSheet.create({
         top: 50,
         left: 20,
         right: 20,
-        zIndex: 100,
+        zIndex: 350,
         flexDirection: 'row',
         alignItems: 'center',
     },
@@ -526,7 +531,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     map: {
-        ...StyleSheet.absoluteFillObject, // This makes the map fill the entire container
+        ...StyleSheet.absoluteFillObject,
         zIndex: 0
     },
     floatingButton: {
@@ -562,10 +567,12 @@ const styles = StyleSheet.create({
         backgroundColor: 'gray',
     },
     fabContainer: {
-        flex: 1,
+        position: 'absolute',
         bottom: 80,
         right: 10,
         zIndex: 200,
+        width: 56,
+        height: 56,
     },
     suggestionsContainer: {
         position: 'absolute',
@@ -577,7 +584,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#ccc',
         maxHeight: 150,
-        zIndex: 200,
+        zIndex: 350,
         elevation: 5,
     },
     suggestionItem: {

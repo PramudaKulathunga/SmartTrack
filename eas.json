@@ -18,6 +18,16 @@
       "autoIncrement": true,
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "firebase_apiKey": "AIzaSyB0IZiY_0meRNkcWsU-SFX5it8ZouhnBRk",
+        "firebase_authDomain": "smarttrack-e053b.firebaseapp.com",
+        "firebase_databaseURL": "https://smarttrack-e053b-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "firebase_projectId": "smarttrack-e053b",
+        "firebase_storageBucket": "smarttrack-e053b.firebasestorage.app",
+        "firebase_messagingSenderId": "669073050721",
+        "firebase_appId": "1:669073050721:web:61b64e6a84eca200d56e20",
+        "firebase_measurementId": "G-WQP4TL0JCQ"
       }
     }
   },

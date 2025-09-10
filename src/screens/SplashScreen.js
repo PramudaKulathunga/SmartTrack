@@ -5,12 +5,9 @@ import {
     StyleSheet,
     Animated,
     Image,
-    View,
-    Platform,
 } from 'react-native';
 import GradientBackground from '../Component/GradientContainer';
 import * as NavigationBar from 'expo-navigation-bar';
-import { AppState } from 'react-native';
 
 const SplashScreen = ({ onAnimationEnd }) => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -18,25 +15,20 @@ const SplashScreen = ({ onAnimationEnd }) => {
 
     // Hide Navigation Bar
     useEffect(() => {
-        const hideNavBar = async () => {
+        const hideBars = async (color) => {
             try {
+                // Hide navigation bar
                 await NavigationBar.setBehaviorAsync('immersive-sticky');
                 await NavigationBar.setVisibilityAsync('hidden');
+                await NavigationBar.setBorderColorAsync(color);
+                // Hide status bar
+                StatusBar.setHidden(true, 'none');
             } catch (err) {
                 console.warn('NavigationBar error:', err);
             }
         };
 
-        hideNavBar();
-
-        // Re-apply when app resumes
-        const appStateListener = AppState.addEventListener('change', state => {
-            if (state === 'active') {
-                hideNavBar();
-            }
-        });
-
-        return () => appStateListener.remove();
+        hideBars("rgb(0, 178, 255)");
     }, []);
 
     useEffect(() => {
@@ -83,7 +75,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#ffffff', // fallback in case gradient fails
+        backgroundColor: '#ffffff',
     },
     logoContainer: {
         alignItems: 'center',

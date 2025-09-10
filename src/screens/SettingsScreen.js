@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { database, ref, set } from '../firebaseConfig';
 import CustomAlert from '../Component/CustomAlert';
 
-const defaultProfilePicture = require("../../assets/defalt_profile_picture.png");
+const defaultProfilePicture = require("../../assets/default_profile_picture.png");
 
 const SettingsScreen = ({ navigation }) => {
     const [image, setImage] = useState(defaultProfilePicture);
