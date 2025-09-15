@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ImageBackground, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
-import { database, ref, set, get } from "../firebaseConfig";
+import { database, ref, set, get, push } from "../firebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CustomAlert from '../Component/CustomAlert';
 
 export default function AddingScreen({ navigation }) {
+    const [devices, setDevices] = useState([]);
     const [newDeviceName, setNewDeviceName] = useState("");
     const [newDeviceId, setNewDeviceId] = useState("");
     const [userData, setUserData] = useState(null);
+    const [userRole, setUserRole] = useState(null);
     const [isAlertVisible, setIsAlertVisible] = useState(false);
     const [alertConfig, setAlertConfig] = useState({});
+    const [isAdding, setIsAdding] = useState(false);
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
     // Function to show custom alert
@@ -33,6 +36,7 @@ export default function AddingScreen({ navigation }) {
                     const parsedUserData = JSON.parse(storedUserData);
                     setUserData(parsedUserData);
                     fetchDevices(parsedUserData.email);
+                    setUserRole(parsedUserData.role);
                 }
             };
             fetchUserData();
@@ -47,6 +51,26 @@ export default function AddingScreen({ navigation }) {
             const devices = Object.values(snapshot.val());
             setUserData((prevUserData) => ({ ...prevUserData, devices }));
         }
+
+        // Set up real-time listener for devices
+        const unsubscribeDevices = onValue(devicesRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const devicesData = Object.values(snapshot.val());
+                setDevices(devicesData);
+
+                // If user is driver, set the first vehicle ID
+                if (userData.role === 'driver' && devicesData.length > 0) {
+                    setDeviceId(devicesData[0].deviceId);
+                }
+            } else {
+                setDevices([]);
+            }
+        });
+
+        // Clean up both listeners on unmount
+        return () => {
+            off(devicesRef, 'value', unsubscribeDevices);
+        };
     };
 
     // Add keyboard event listeners
@@ -67,48 +91,142 @@ export default function AddingScreen({ navigation }) {
 
     // Function to handle adding a new device
     const handleAddDevice = async () => {
+        if (isAdding) return;
+
         Keyboard.dismiss();
+        setIsAdding(true);
 
         if (newDeviceName.trim() === "" || newDeviceId.trim() === "") {
-            showAlert("Error", "Please fill in all fields.");
-            return;
-        }
-
-        if (userData.role === "driver" && userData.devices?.length >= 1) {
-            showAlert(
-                "Device Count Exceeded",
-                "Drivers can only add one device. Do you want to terminate this process?",
-                true,
-                async () => {
-                    navigation.jumpTo("Home");
-                }
-            );
+            showAlert("Error", "Please fill all fields.");
+            setIsAdding(false);
             return;
         }
 
         try {
-            const newDevice = {
-                id: (userData.devices?.length || 0) + 1,
-                name: newDeviceName,
-                deviceId: newDeviceId,
-                status: "Not Hired"
-            };
+            if (userData.role === 'driver' && devices.length >= 1) {
+                showAlert("Error", "Drivers can only add one device.");
+                setIsAdding(false);
+                return;
+            }
 
-            const updatedDevices = userData.devices ? [...userData.devices, newDevice] : [newDevice];
+            if (userData.role === 'driver') {
+                // For drivers, create a notification for the vehicle owner
+                const notificationData = {
+                    driverEmail: userData.email,
+                    driverName: userData.name,
+                    deviceId: newDeviceId,
+                    deviceName: newDeviceName,
+                    status: 'pending',
+                    timestamp: Date.now()
+                };
 
-            // Update Firebase
-            const userRef = ref(database, `users/${userData.email.replace(/\./g, ",")}`);
-            await set(ref(database, `users/${userData.email.replace(/\./g, ",")}/devices`), updatedDevices);
+                // Find the vehicle owner by checking if vehicle exists in the devices node
+                const deviceRef = ref(database, `devices/${newDeviceId}`);
+                const deviceSnapshot = await get(deviceRef);
 
-            // Update AsyncStorage
-            const updatedUserData = { ...userData, devices: updatedDevices };
-            await AsyncStorage.setItem("userData", JSON.stringify(updatedUserData));
+                if (!deviceSnapshot.exists()) {
+                    showAlert("Error", "Device ID does not exist in the system.");
+                    setIsAdding(false);
+                    return;
+                }
 
-            setNewDeviceId('');
-            setNewDeviceName('');
-            navigation.jumpTo("Home");
+                // Find the owner by checking all users
+                const usersRef = ref(database, 'users');
+                const usersSnapshot = await get(usersRef);
+                let ownerEmail = null;
+
+                if (usersSnapshot.exists()) {
+                    const users = usersSnapshot.val();
+                    for (const [email, userData] of Object.entries(users)) {
+                        if (userData.devices) {
+                            const userDevices = Array.isArray(userData.devices) ?
+                                userData.devices : Object.values(userData.devices);
+                            if (userDevices.some(device => device.deviceId === newDeviceId)) {
+                                ownerEmail = email.replace(/,/g, '.');
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (ownerEmail) {
+                    const ownerEmailKey = ownerEmail.replace(/\./g, ',');
+                    const notificationsRef = ref(database, `notifications/${ownerEmailKey}`);
+                    const newNotificationRef = push(notificationsRef);
+                    await set(newNotificationRef, notificationData);
+
+                    // Add to driver's pending devices
+                    const emailKey = userData.email.replace(/\./g, ',');
+                    const pendingDevicesRef = ref(database, `pendingDevices/${emailKey}`);
+                    const newPendingDeviceRef = push(pendingDevicesRef);
+                    await set(newPendingDeviceRef, {
+                        deviceId: newDeviceId,
+                        deviceName: newDeviceName,
+                        status: 'pending',
+                        timestamp: Date.now()
+                    });
+
+                    // Add notification for driver
+                    const driverNotificationRef = ref(database, `driverNotifications/${emailKey}`);
+                    const newDriverNotificationRef = push(driverNotificationRef);
+                    await set(newDriverNotificationRef, {
+                        type: 'request_sent',
+                        deviceId: newDeviceId,
+                        deviceName: newDeviceName,
+                        status: 'pending',
+                        timestamp: Date.now(),
+                        message: `Request sent for vehicle ${newDeviceName}`
+                    });
+
+                    showAlert("Request Sent", "Your vehicle request has been sent to the owner for approval.");
+                } else {
+                    showAlert("Error", "Could not find the owner of this device.");
+                }
+            } else {
+                // For owners, first check if vehicle exists in the devices node
+                const deviceRef = ref(database, `devices/${newDeviceId}`);
+                const deviceSnapshot = await get(deviceRef);
+
+                if (!deviceSnapshot.exists()) {
+                    showAlert("Error", "Device ID does not exist in the system. Please add the vehicle to the devices node first.");
+                    setIsAdding(false);
+                    return;
+                }
+
+                // Check if vehicle is already added to this user
+                if (devices.some(device => device.deviceId === newDeviceId)) {
+                    showAlert("Error", "This vehicle is already added to your account.");
+                    setIsAdding(false);
+                    return;
+                }
+
+                const newDevice = {
+                    id: (devices.length + 1).toString(),
+                    name: newDeviceName,
+                    deviceId: newDeviceId,
+                    status: "Not Hired"
+                };
+
+                const updatedDevices = [...devices, newDevice];
+                const emailKey = userData.email.replace(/\./g, ',');
+
+                // Update Firebase
+                await set(ref(database, `users/${emailKey}/devices`), updatedDevices);
+
+                // Also update AsyncStorage
+                await AsyncStorage.setItem('userData', JSON.stringify({ ...userData, devices: updatedDevices }));
+
+                showAlert("Success", "Device added successfully.");
+            }
+
+            setNewDeviceName("");
+            setNewDeviceId("");
+            navigation.jumpTo('Home');
         } catch (error) {
-            showAlert("Error", "An error occurred while adding the device. Please try again.");
+            console.error("Error adding device:", error);
+            showAlert("Error", "Failed to add device. Please try again.");
+        } finally {
+            setIsAdding(false);
         }
     };
 
@@ -144,7 +262,9 @@ export default function AddingScreen({ navigation }) {
                         />
                         <View style={styles.modalButtons}>
                             <TouchableOpacity style={styles.submitButton} onPress={handleAddDevice}>
-                                <Text style={styles.buttonText}>Add</Text>
+                                <Text style={styles.buttonText}>
+                                    {userRole === 'driver' ? 'Request to Add a New Vehicle' : 'Add a New Vehicle'}
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>

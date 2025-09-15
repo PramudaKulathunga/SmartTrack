@@ -444,7 +444,7 @@ export default function MapScreen({ route, navigation }) {
                 }}>
                     {/* Floating Focus on Device Button */}
                     <TouchableOpacity
-                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 105 : 10 }]}
+                        style={[styles.floatingButton, styles.focusDeviceButton, { marginTop: userRole === 'driver' ? 105 : 50 }]}
                         onPress={() => {
                             setIsFocusing((prev) => !prev);
                         }}
@@ -455,7 +455,7 @@ export default function MapScreen({ route, navigation }) {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 105 : 10 }]}
+                        style={[styles.floatingButton, isTownRouteActive && styles.disabledButton, { marginTop: userRole === 'driver' ? 105 : 50 }]}
                         onPress={handleNavigate}
                         disabled={isTownRouteActive}
                     >

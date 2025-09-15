@@ -144,7 +144,6 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
     };
 
     const addDevice = async () => {
-        // Prevent multiple clicks while processing
         if (isAdding) return;
 
         Keyboard.dismiss();
@@ -291,16 +290,83 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
             "Are you sure you want to delete this device?",
             true,
             async () => {
-                const updatedDevices = devices.filter(device => device.deviceId !== deviceId);
-                const emailKey = userData.email.replace(/\./g, ',');
+                try {
+                    const updatedDevices = devices.filter(device => device.deviceId !== deviceId);
+                    const emailKey = userData.email.replace(/\./g, ',');
 
-                // Update Firebase
-                await set(ref(database, `users/${emailKey}/devices`), updatedDevices);
+                    // Update Firebase - remove from driver's devices
+                    await set(ref(database, `users/${emailKey}/devices`), updatedDevices);
 
-                // Also update AsyncStorage
-                await AsyncStorage.setItem('userData', JSON.stringify({ ...userData, devices: updatedDevices }));
+                    // Also update AsyncStorage
+                    await AsyncStorage.setItem('userData', JSON.stringify({ ...userData, devices: updatedDevices }));
 
-                setIsAlertVisible(false);
+                    // If the user is a driver, update the owner's device status to "Not Hired"
+                    if (userData.role === 'driver') {
+                        // Find the owner of this device
+                        const usersRef = ref(database, 'users');
+                        const usersSnapshot = await get(usersRef);
+
+                        if (usersSnapshot.exists()) {
+                            const users = usersSnapshot.val();
+
+                            for (const [email, userData] of Object.entries(users)) {
+                                if (userData.devices) {
+                                    const userDevices = Array.isArray(userData.devices) ?
+                                        userData.devices : Object.values(userData.devices);
+
+                                    // Check if this user has the device and is the owner (role === 'owner')
+                                    const deviceToUpdate = userDevices.find(device =>
+                                        device.deviceId === deviceId && userData.role === 'owner'
+                                    );
+
+                                    if (deviceToUpdate) {
+                                        const ownerEmailKey = email;
+                                        const ownerDevicesRef = ref(database, `users/${ownerEmailKey}/devices`);
+
+                                        // Update the device status to "Not Hired" and remove driver info
+                                        const updatedOwnerDevices = userDevices.map(device =>
+                                            device.deviceId === deviceId ?
+                                                {
+                                                    ...device,
+                                                    status: 'Not Hired',
+                                                    driverName: null,
+                                                    driverEmail: null
+                                                } : device
+                                        );
+
+                                        await set(ownerDevicesRef, updatedOwnerDevices);
+
+                                        // Also update the device status in the devices node
+                                        const deviceRef = ref(database, `devices/${deviceId}`);
+                                        await update(deviceRef, { status: 'not hired' });
+
+                                        // Send notification to owner
+                                        const ownerNotificationRef = ref(database, `notifications/${ownerEmailKey}`);
+                                        const newNotificationRef = push(ownerNotificationRef);
+                                        await set(newNotificationRef, {
+                                            type: 'device_removed',
+                                            deviceId: deviceId,
+                                            deviceName: deviceToUpdate.name,
+                                            driverName: userData.name,
+                                            driverEmail: userData.email,
+                                            status: 'info',
+                                            timestamp: Date.now(),
+                                            message: `Driver ${userData.name} has removed vehicle ${deviceToUpdate.name} from their account`
+                                        });
+
+                                        break; // Exit loop once we find the owner
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    setIsAlertVisible(false);
+                    showAlert("Success", "Device removed successfully.");
+                } catch (error) {
+                    console.error("Error removing device:", error);
+                    showAlert("Error", "Failed to remove device. Please try again.");
+                }
             }
         );
     };
@@ -496,12 +562,8 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
         try {
             const emailKey = userData.email.replace(/\./g, ',');
             const notificationsRef = ref(database, `driverNotifications/${emailKey}`);
-
             await remove(notificationsRef);
-
             setDriverNotifications([]);
-
-            showAlert("Success", "All notifications cleared.");
         } catch (error) {
             console.error("Error clearing all notifications:", error);
             showAlert("Error", "Failed to clear notifications. Please try again.");
@@ -554,7 +616,7 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
                     ) : (
                         <FlatList
                             data={[...devices, ...pendingDevices]}
-                            keyExtractor={(item) => item.deviceId || item.id}
+                            keyExtractor={(item) => item.uniqueId || `${item.deviceId}-${item.status || 'device'}`}
                             scrollEnabled={true}
                             renderItem={({ item }) => (
                                 <Card style={[
@@ -609,7 +671,9 @@ const HomeScreen = ({ setIsMapIconVisible }) => {
                     )}
 
                     <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-                        <Text style={styles.addButtonText}>Add New Device</Text>
+                        <Text style={styles.addButtonText}>
+                            {userRole == "driver" ? "Request to Add a New Vehicle" : "Add a New Vehicle"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
